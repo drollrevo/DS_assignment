@@ -1,13 +1,1 @@
-//make the node structure
-struct TransactionNode {
-    std::string customerID;
-    std::string product;
-    double price;
-    std::string date;
-    std::string category;
-    std::string paymentMethod;
-    TransactionNode* next;
-};
 
-//calculate the percentage
-double percentage = (creditCardCount / (double)electronicsCount) * 100;
