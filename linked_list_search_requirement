@@ -1,1 +1,129 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <cmath>
+#include <string>
+using namespace std;
 
+struct TransactionNode {
+    string customerID;
+    string product;
+    double price;
+    string date;
+    string category;
+    string paymentMethod;
+    TransactionNode* next;
+
+    TransactionNode(string cid, string prod, double pr, string dt, string cat, string pay)
+        : customerID(cid), product(prod), price(pr), date(dt), category(cat), paymentMethod(pay), next(nullptr) {}
+};
+
+class TransactionList {
+private:
+    TransactionNode* head;
+
+public:
+    TransactionList() : head(nullptr) {}
+
+    void insert(string cid, string prod, double pr, string dt, string cat, string pay) {
+        TransactionNode* newNode = new TransactionNode(cid, prod, pr, dt, cat, pay);
+        if (!head) {
+            head = newNode;
+        } else {
+            TransactionNode* temp = head;
+            while (temp->next) temp = temp->next;
+            temp->next = newNode;
+        }
+    }
+
+    int getLength() {
+        int count = 0;
+        TransactionNode* temp = head;
+        while (temp) {
+            count++;
+            temp = temp->next;
+        }
+        return count;
+    }
+
+    // Jump Search adapted for Linked List
+    int countElectronicsCreditCard() {
+        int totalElectronics = 0;
+        int creditCardCount = 0;
+
+        int n = getLength();
+        int step = sqrt(n);
+
+        TransactionNode* prev = head;
+        TransactionNode* current = head;
+
+        while (current) {
+            TransactionNode* jump = current;
+            for (int i = 0; i < step - 1 && jump->next; i++) {
+                jump = jump->next;
+            }
+
+            // Linear search within the block
+            while (current != jump->next) {
+                if (current->category == "Electronics") {
+                    totalElectronics++;
+                    if (current->paymentMethod == "Credit Card") {
+                        creditCardCount++;
+                    }
+                }
+                current = current->next;
+            }
+        }
+
+        cout << "Total Electronics Transactions: " << totalElectronics << endl;
+        cout << "Electronics Paid by Credit Card: " << creditCardCount << endl;
+
+        if (totalElectronics > 0) {
+            double percent = (creditCardCount / (double)totalElectronics) * 100;
+            cout << "Percentage of 'Electronics' purchases made using 'Credit Card': " << percent << "%" << endl;
+        } else {
+            cout << "No 'Electronics' transactions found." << endl;
+        }
+
+        return creditCardCount;
+    }
+
+    void loadFromCSV(const string& filename) {
+        ifstream file(filename);
+        if (!file.is_open()) {
+            cerr << "Error opening file!" << endl;
+            return;
+        }
+
+        string line;
+        getline(file, line); // Skip header
+
+        while (getline(file, line)) {
+            stringstream ss(line);
+            string cid, prod, priceStr, date, cat, pay;
+
+            getline(ss, cid, ',');
+            getline(ss, prod, ',');
+            getline(ss, priceStr, ',');
+            getline(ss, date, ',');
+            getline(ss, cat, ',');
+            getline(ss, pay, ',');
+
+            try {
+                double price = stod(priceStr);
+                insert(cid, prod, price, date, cat, pay);
+            } catch (...) {
+                cerr << "Invalid price in row: " << line << endl;
+            }
+        }
+
+        file.close();
+    }
+};
+
+int main() {
+    TransactionList list;
+    list.loadFromCSV("transactions.csv");
+    list.countElectronicsCreditCard();
+    return 0;
+}
