@@ -1,44 +1,43 @@
 #include <iostream>
-#include <fstream>
-#include <sstream>
 #include <cmath>
 #include <string>
 using namespace std;
 
-struct TransactionNode {
+// ---------- Transaction & Node Structures ----------
+struct Transaction {
     string customerID;
     string product;
     double price;
     string date;
     string category;
     string paymentMethod;
-    TransactionNode* next;
-
-    TransactionNode(string cid, string prod, double pr, string dt, string cat, string pay)
-        : customerID(cid), product(prod), price(pr), date(dt), category(cat), paymentMethod(pay), next(nullptr) {}
 };
 
-class TransactionList {
-private:
-    TransactionNode* head;
+struct Node {
+    Transaction data;
+    Node* next;
+    Node(Transaction t) : data(t), next(nullptr) {}
+};
 
+// ---------- Linked List ----------
+class LinkedList {
 public:
-    TransactionList() : head(nullptr) {}
+    Node* head;
+    LinkedList() : head(nullptr) {}
 
-    void insert(string cid, string prod, double pr, string dt, string cat, string pay) {
-        TransactionNode* newNode = new TransactionNode(cid, prod, pr, dt, cat, pay);
-        if (!head) {
-            head = newNode;
-        } else {
-            TransactionNode* temp = head;
+    void insert(Transaction t) {
+        Node* newNode = new Node(t);
+        if (!head) head = newNode;
+        else {
+            Node* temp = head;
             while (temp->next) temp = temp->next;
             temp->next = newNode;
         }
     }
 
-    int getLength() {
+    int getLength() const {
         int count = 0;
-        TransactionNode* temp = head;
+        Node* temp = head;
         while (temp) {
             count++;
             temp = temp->next;
@@ -46,84 +45,159 @@ public:
         return count;
     }
 
-    // Jump Search adapted for Linked List
-    int countElectronicsCreditCard() {
-        int totalElectronics = 0;
-        int creditCardCount = 0;
-
-        int n = getLength();
-        int step = sqrt(n);
-
-        TransactionNode* prev = head;
-        TransactionNode* current = head;
-
-        while (current) {
-            TransactionNode* jump = current;
-            for (int i = 0; i < step - 1 && jump->next; i++) {
-                jump = jump->next;
-            }
-
-            // Linear search within the block
-            while (current != jump->next) {
-                if (current->category == "Electronics") {
-                    totalElectronics++;
-                    if (current->paymentMethod == "Credit Card") {
-                        creditCardCount++;
-                    }
+    void sortByCategory() {
+        if (!head || !head->next) return;
+        bool swapped;
+        do {
+            swapped = false;
+            Node* curr = head;
+            while (curr->next) {
+                if (curr->data.category > curr->next->data.category) {
+                    swap(curr->data, curr->next->data);
+                    swapped = true;
                 }
-                current = current->next;
+                curr = curr->next;
             }
-        }
-
-        cout << "Total Electronics Transactions: " << totalElectronics << endl;
-        cout << "Electronics Paid by Credit Card: " << creditCardCount << endl;
-
-        if (totalElectronics > 0) {
-            double percent = (creditCardCount / (double)totalElectronics) * 100;
-            cout << "Percentage of 'Electronics' purchases made using 'Credit Card': " << percent << "%" << endl;
-        } else {
-            cout << "No 'Electronics' transactions found." << endl;
-        }
-
-        return creditCardCount;
+        } while (swapped);
     }
 
-    void loadFromCSV(const string& filename) {
-        ifstream file(filename);
-        if (!file.is_open()) {
-            cerr << "Error opening file!" << endl;
-            return;
-        }
-
-        string line;
-        getline(file, line); // Skip header
-
-        while (getline(file, line)) {
-            stringstream ss(line);
-            string cid, prod, priceStr, date, cat, pay;
-
-            getline(ss, cid, ',');
-            getline(ss, prod, ',');
-            getline(ss, priceStr, ',');
-            getline(ss, date, ',');
-            getline(ss, cat, ',');
-            getline(ss, pay, ',');
-
-            try {
-                double price = stod(priceStr);
-                insert(cid, prod, price, date, cat, pay);
-            } catch (...) {
-                cerr << "Invalid price in row: " << line << endl;
+    void sortByPrice() {
+        if (!head || !head->next) return;
+        bool swapped;
+        do {
+            swapped = false;
+            Node* curr = head;
+            while (curr->next) {
+                if (curr->data.price > curr->next->data.price) {
+                    swap(curr->data, curr->next->data);
+                    swapped = true;
+                }
+                curr = curr->next;
             }
-        }
+        } while (swapped);
+    }
 
-        file.close();
+    Node** toArray(int& length) const {
+        length = getLength();
+        Node** arr = new Node*[length];
+        Node* temp = head;
+        for (int i = 0; i < length && temp; ++i) {
+            arr[i] = temp;
+            temp = temp->next;
+        }
+        return arr;
     }
 };
 
-int main() {
-    TransactionList list;
-    list.loadFromCSV("transactions.csv");
-    list.countElectronicsCreditCard();
-    return 0;
-}
+// ---------- Search Algorithms ----------
+class LinkedListSearch {
+public:
+    // 1. Linear Search
+    static int linearSearch(Node* head, const string& category, const string& payment) {
+        int count = 0;
+        while (head) {
+            if (head->data.category == category && head->data.paymentMethod == payment)
+                count++;
+            head = head->next;
+        }
+        return count;
+    }
+
+    // 2. Binary Search (needs sorted list by category)
+    static int binarySearch(const LinkedList& list, const string& category, const string& payment) {
+        int len = 0;
+        Node** arr = list.toArray(len);
+        int count = 0;
+        int low = 0, high = len - 1;
+
+        while (low <= high) {
+            int mid = (low + high) / 2;
+            if (arr[mid]->data.category == category) {
+                // Search left and right for all matches
+                int i = mid;
+                while (i >= 0 && arr[i]->data.category == category) {
+                    if (arr[i]->data.paymentMethod == payment) count++;
+                    i--;
+                }
+                i = mid + 1;
+                while (i < len && arr[i]->data.category == category) {
+                    if (arr[i]->data.paymentMethod == payment) count++;
+                    i++;
+                }
+                break;
+            } else if (arr[mid]->data.category < category)
+                low = mid + 1;
+            else
+                high = mid - 1;
+        }
+
+        delete[] arr;
+        return count;
+    }
+
+    // 3. Jump Search
+    static int jumpSearch(Node* head, const string& category, const string& payment) {
+        int length = 0;
+        Node* temp = head;
+        while (temp) { length++; temp = temp->next; }
+
+        int step = sqrt(length);
+        int count = 0;
+
+        Node* current = head;
+        while (current) {
+            Node* jump = current;
+            for (int i = 0; i < step && jump->next; ++i)
+                jump = jump->next;
+
+            Node* walker = current;
+            while (walker != jump->next) {
+                if (walker->data.category == category && walker->data.paymentMethod == payment)
+                    count++;
+                walker = walker->next;
+            }
+
+            current = jump->next;
+        }
+
+        return count;
+    }
+
+    // 4. Interpolation Search (adapted for price field)
+    static Node* interpolationSearchByPrice(const LinkedList& list, double targetPrice) {
+        int len = 0;
+        Node** arr = list.toArray(len);
+        int low = 0, high = len - 1;
+
+        while (low <= high &&
+               targetPrice >= arr[low]->data.price &&
+               targetPrice <= arr[high]->data.price) {
+
+            if (arr[high]->data.price == arr[low]->data.price)
+                break;
+
+            int pos = low + ((targetPrice - arr[low]->data.price) * (high - low)) /
+                              (arr[high]->data.price - arr[low]->data.price);
+
+            if (pos < 0 || pos >= len)
+                break;
+
+            double currentPrice = arr[pos]->data.price;
+
+            if (currentPrice == targetPrice) {
+                Node* result = arr[pos];
+                delete[] arr;
+                return result;
+            }
+
+            if (currentPrice < targetPrice)
+                low = pos + 1;
+            else
+                high = pos - 1;
+        }
+
+        delete[] arr;
+        return nullptr;
+    }
+};
+
