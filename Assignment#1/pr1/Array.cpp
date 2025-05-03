@@ -519,158 +519,158 @@ void Array::sortTransactionsByDate(int sort_choice, long long& duration_ms) {
 
 
 
-// Helper function to convert string to lowercase (include if not already present)
-std::string to_lowercase(const std::string& str) {
-    std::string result = str;
-    std::transform(result.begin(), result.end(), result.begin(), ::tolower);
-    return result;
-}
+// // Helper function to convert string to lowercase (include if not already present)
+// std::string to_lowercase(const std::string& str) {
+//     std::string result = str;
+//     std::transform(result.begin(), result.end(), result.begin(), ::tolower);
+//     return result;
+// }
 
-// Updated calculateElectronicsCreditCardPercentage for Question 2
-double Array::calculateElectronicsCreditCardPercentage(int search_choice, long long& duration_ms) {
-    int electronics_count = 0;
-    int credit_card_count = 0;
-    auto start = std::chrono::high_resolution_clock::now();
-
-    // Use linear search logic for all search choices to ensure correct results
-    for (int i = 0; i < trans_size; i++) {
-        if (to_lowercase(transactions[i].category) == "electronics") {
-            electronics_count++;
-            if (to_lowercase(transactions[i].payment_method) == "credit card") {
-                credit_card_count++;
-            }
-        }
-    }
-
-    auto end = std::chrono::high_resolution_clock::now();
-    duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-    std::string algo_name;
-    switch (search_choice) {
-        case 1: algo_name = "Linear Search"; break;
-        case 2: algo_name = "Binary Search"; break;
-        case 3: algo_name = "Jump Search"; break;
-        case 4: algo_name = "Interpolation Search"; break;
-        default: algo_name = "Invalid"; break;
-    }
-
-    std::cout << "[" << algo_name << "] Execution time: " << duration_ms << " ms\n";
-    std::cout << "Total Electronics Purchases: " << electronics_count << "\n";
-    std::cout << "Electronics Purchases with Credit Card: " << credit_card_count << "\n";
-    double percentage = electronics_count > 0 ? (static_cast<double>(credit_card_count) / electronics_count * 100.0) : 0.0;
-    std::cout << "Percentage: " << std::fixed << std::setprecision(2) << percentage << "%\n";
-
-    return percentage;
-}
-
-// // Question 2: Calculate percentage of Electronics purchases with Credit Card
+// // Updated calculateElectronicsCreditCardPercentage for Question 2
 // double Array::calculateElectronicsCreditCardPercentage(int search_choice, long long& duration_ms) {
-//     auto start = std::chrono::high_resolution_clock::now();
 //     int electronics_count = 0;
 //     int credit_card_count = 0;
+//     auto start = std::chrono::high_resolution_clock::now();
 
-//     // Sort for non-linear search algorithms
-//     if (search_choice >= 2) {
-//         mergeSortByCategory();
-//     }
-
-//     switch (search_choice) {
-//         case 1: // Linear Search
-//             std::cout << "[Linear Search] ";
-//             for (int i = 0; i < trans_size; i++) {
-//                 if (transactions[i].category == "Electronics") {
-//                     electronics_count++;
-//                     if (transactions[i].payment_method == "Credit Card") {
-//                         credit_card_count++;
-//                     }
-//                 }
+//     // Use linear search logic for all search choices to ensure correct results
+//     for (int i = 0; i < trans_size; i++) {
+//         if (to_lowercase(transactions[i].category) == "electronics") {
+//             electronics_count++;
+//             if (to_lowercase(transactions[i].payment_method) == "credit card") {
+//                 credit_card_count++;
 //             }
-//             break;
-//         case 2: // Binary Search
-//             std::cout << "[Binary Search] ";
-//             {
-//                 int idx = binarySearchByCategory("Electronics");
-//                 if (idx != -1) {
-//                     // Scan left and right for all Electronics
-//                     for (int i = idx; i >= 0 && transactions[i].category == "Electronics"; i--) {
-//                         electronics_count++;
-//                         if (transactions[i].payment_method == "Credit Card") {
-//                             credit_card_count++;
-//                         }
-//                     }
-//                     for (int i = idx + 1; i < trans_size && transactions[i].category == "Electronics"; i++) {
-//                         electronics_count++;
-//                         if (transactions[i].payment_method == "Credit Card") {
-//                             credit_card_count++;
-//                         }
-//                     }
-//                 }
-//             }
-//             break;
-//         case 3: // Jump Search
-//             std::cout << "[Jump Search] ";
-//             {
-//                 int idx = jumpSearchByCategory("Electronics");
-//                 if (idx != -1) {
-//                     for (int i = idx; i >= 0 && transactions[i].category == "Electronics"; i--) {
-//                         electronics_count++;
-//                         if (transactions[i].payment_method == "Credit Card") {
-//                             credit_card_count++;
-//                         }
-//                     }
-//                     for (int i = idx + 1; i < trans_size && transactions[i].category == "Electronics"; i++) {
-//                         electronics_count++;
-//                         if (transactions[i].payment_method == "Credit Card") {
-//                             credit_card_count++;
-//                         }
-//                     }
-//                 }
-//             }
-//             break;
-//         case 4: // Interpolation Search
-//             std::cout << "[Interpolation Search] ";
-//             {
-//                 int idx = interpolationSearchByCategory("Electronics");
-//                 if (idx != -1) {
-//                     for (int i = idx; i >= 0 && transactions[i].category == "Electronics"; i--) {
-//                         electronics_count++;
-//                         if (transactions[i].payment_method == "Credit Card") {
-//                             credit_card_count++;
-//                         }
-//                     }
-//                     for (int i = idx + 1; i < trans_size && transactions[i].category == "Electronics"; i++) {
-//                         electronics_count++;
-//                         if (transactions[i].payment_method == "Credit Card") {
-//                             credit_card_count++;
-//                         }
-//                     }
-//                 }
-//             }
-//             break;
-//         default:
-//             std::cout << "Invalid search choice. Using Linear Search.\n";
-//             std::cout << "[Linear Search] ";
-//             for (int i = 0; i < trans_size; i++) {
-//                 if (transactions[i].category == "Electronics") {
-//                     electronics_count++;
-//                     if (transactions[i].payment_method == "Credit Card") {
-//                         credit_card_count++;
-//                     }
-//                 }
-//             }
-//             break;
+//         }
 //     }
 
 //     auto end = std::chrono::high_resolution_clock::now();
 //     duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
-//     double percentage = electronics_count > 0 ? (static_cast<double>(credit_card_count) / electronics_count * 100.0) : 0.0;
-//     std::cout << "Execution time: " << duration_ms << " ms\n";
+//     std::string algo_name;
+//     switch (search_choice) {
+//         case 1: algo_name = "Linear Search"; break;
+//         case 2: algo_name = "Binary Search"; break;
+//         case 3: algo_name = "Jump Search"; break;
+//         case 4: algo_name = "Interpolation Search"; break;
+//         default: algo_name = "Invalid"; break;
+//     }
+
+//     std::cout << "[" << algo_name << "] Execution time: " << duration_ms << " ms\n";
 //     std::cout << "Total Electronics Purchases: " << electronics_count << "\n";
 //     std::cout << "Electronics Purchases with Credit Card: " << credit_card_count << "\n";
+//     double percentage = electronics_count > 0 ? (static_cast<double>(credit_card_count) / electronics_count * 100.0) : 0.0;
 //     std::cout << "Percentage: " << std::fixed << std::setprecision(2) << percentage << "%\n";
+
 //     return percentage;
 // }
+
+// Question 2: Calculate percentage of Electronics purchases with Credit Card
+double Array::calculateElectronicsCreditCardPercentage(int search_choice, long long& duration_ms) {
+    auto start = std::chrono::high_resolution_clock::now();
+    int electronics_count = 0;
+    int credit_card_count = 0;
+
+    // Sort for non-linear search algorithms
+    if (search_choice >= 2) {
+        mergeSortByCategory();
+    }
+
+    switch (search_choice) {
+        case 1: // Linear Search
+            std::cout << "[Linear Search] ";
+            for (int i = 0; i < trans_size; i++) {
+                if (transactions[i].category == "Electronics") {
+                    electronics_count++;
+                    if (transactions[i].payment_method == "Credit Card") {
+                        credit_card_count++;
+                    }
+                }
+            }
+            break;
+        case 2: // Binary Search
+            std::cout << "[Binary Search] ";
+            {
+                int idx = binarySearchByCategory("Electronics");
+                if (idx != -1) {
+                    // Scan left and right for all Electronics
+                    for (int i = idx; i >= 0 && transactions[i].category == "Electronics"; i--) {
+                        electronics_count++;
+                        if (transactions[i].payment_method == "Credit Card") {
+                            credit_card_count++;
+                        }
+                    }
+                    for (int i = idx + 1; i < trans_size && transactions[i].category == "Electronics"; i++) {
+                        electronics_count++;
+                        if (transactions[i].payment_method == "Credit Card") {
+                            credit_card_count++;
+                        }
+                    }
+                }
+            }
+            break;
+        case 3: // Jump Search
+            std::cout << "[Jump Search] ";
+            {
+                int idx = jumpSearchByCategory("Electronics");
+                if (idx != -1) {
+                    for (int i = idx; i >= 0 && transactions[i].category == "Electronics"; i--) {
+                        electronics_count++;
+                        if (transactions[i].payment_method == "Credit Card") {
+                            credit_card_count++;
+                        }
+                    }
+                    for (int i = idx + 1; i < trans_size && transactions[i].category == "Electronics"; i++) {
+                        electronics_count++;
+                        if (transactions[i].payment_method == "Credit Card") {
+                            credit_card_count++;
+                        }
+                    }
+                }
+            }
+            break;
+        case 4: // Interpolation Search
+            std::cout << "[Interpolation Search] ";
+            {
+                int idx = interpolationSearchByCategory("Electronics");
+                if (idx != -1) {
+                    for (int i = idx; i >= 0 && transactions[i].category == "Electronics"; i--) {
+                        electronics_count++;
+                        if (transactions[i].payment_method == "Credit Card") {
+                            credit_card_count++;
+                        }
+                    }
+                    for (int i = idx + 1; i < trans_size && transactions[i].category == "Electronics"; i++) {
+                        electronics_count++;
+                        if (transactions[i].payment_method == "Credit Card") {
+                            credit_card_count++;
+                        }
+                    }
+                }
+            }
+            break;
+        default:
+            std::cout << "Invalid search choice. Using Linear Search.\n";
+            std::cout << "[Linear Search] ";
+            for (int i = 0; i < trans_size; i++) {
+                if (transactions[i].category == "Electronics") {
+                    electronics_count++;
+                    if (transactions[i].payment_method == "Credit Card") {
+                        credit_card_count++;
+                    }
+                }
+            }
+            break;
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+    double percentage = electronics_count > 0 ? (static_cast<double>(credit_card_count) / electronics_count * 100.0) : 0.0;
+    std::cout << "Execution time: " << duration_ms << " ms\n";
+    std::cout << "Total Electronics Purchases: " << electronics_count << "\n";
+    std::cout << "Electronics Purchases with Credit Card: " << credit_card_count << "\n";
+    std::cout << "Percentage: " << std::fixed << std::setprecision(2) << percentage << "%\n";
+    return percentage;
+}
 
 // Helper function to split text into words
 std::string* splitWords(const std::string& text, int& num_words) {
