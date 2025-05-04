@@ -1,0 +1,74 @@
+#ifndef LINKED_LIST_HPP
+#define LINKED_LIST_HPP
+
+#include <string>
+
+// Transaction structure
+struct Transaction {
+    std::string customer_id;
+    std::string product;
+    std::string category;
+    double price;
+    std::string date;
+    std::string payment_method;
+};
+
+// Review structure
+struct Review {
+    std::string product_id;
+    std::string customer_id;
+    int rating;
+    std::string review_text;
+};
+
+// Transaction node
+struct TransactionNode {
+    Transaction data;
+    TransactionNode* next;
+    
+    TransactionNode(const Transaction& t) : data(t), next(nullptr) {}
+};
+
+// Review node
+struct ReviewNode {
+    Review data;
+    ReviewNode* next;
+    
+    ReviewNode(const Review& r) : data(r), next(nullptr) {}
+};
+
+// LinkedList class
+class LinkedList {
+private:
+    TransactionNode* transactionHead;
+    ReviewNode* reviewHead;
+    int transactionCount;
+    int reviewCount;
+    
+    // Helper methods for merge sort
+    TransactionNode* getMiddle(TransactionNode* head);
+    TransactionNode* sortedMerge(TransactionNode* a, TransactionNode* b);
+    
+    // Sorting implementations
+    void bubbleSortTransactions();
+    void insertionSortTransactions();
+    void selectionSortTransactions();
+    TransactionNode* mergeSortTransactions(TransactionNode* head);
+    
+    // Method to display sorted transactions
+    void displaySortedTransactions();
+    
+public:
+    LinkedList();
+    ~LinkedList();
+    
+    void addTransaction(const Transaction& t);
+    void addReview(const Review& r);
+    
+    void sortTransactionsByDate(int sortChoice, long long& duration_ms);
+    void countTransactionsByDate();
+    void calculateElectronicsCreditCardPercentage(int searchChoice, int sortChoice, long long& duration_ms);
+    void findFrequentWordsInOneStarReviews(int sortChoice, long long& duration_ms);
+};
+
+#endif // LINKED_LIST_HPP
