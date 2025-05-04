@@ -1,3 +1,4 @@
+#include "linked-list.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -8,398 +9,349 @@
 #include <algorithm>
 #include <cmath>
 
-// Define structures for transaction and review data
-struct Transaction {
-    std::string customer_id;
-    std::string product;
-    std::string category;
-    double price;
-    std::string date;
-    std::string payment_method;
-};
-
-struct Review {
-    std::string product_id;
-    std::string customer_id;
-    int rating;
-    std::string review_text;
-};
-
-// Define nodes for linked lists
-struct TransactionNode {
-    Transaction data;
-    TransactionNode* next;
-    
-    TransactionNode(Transaction t) : data(t), next(nullptr) {}
-};
-
-struct ReviewNode {
-    Review data;
-    ReviewNode* next;
-    
-    ReviewNode(Review r) : data(r), next(nullptr) {}
-};
-
-// Helper function to standardize date format (assumed to be defined elsewhere)
+// Helper function implementation
 std::string standardizeDate(const std::string& date) {
     // Implementation would go here
     // For now, just return the date as is
     return date;
 }
 
-// LinkedList class to manage transactions and reviews
-class LinkedList {
-private:
-    TransactionNode* transactionHead;
-    ReviewNode* reviewHead;
-    int transactionCount;
-    int reviewCount;
+// LinkedList class implementation
+LinkedList::LinkedList() : transactionHead(nullptr), reviewHead(nullptr), transactionCount(0), reviewCount(0) {}
 
-public:
-    LinkedList() : transactionHead(nullptr), reviewHead(nullptr), transactionCount(0), reviewCount(0) {}
-    
-    ~LinkedList() {
-        // Clean up transaction nodes
-        TransactionNode* currentT = transactionHead;
-        while (currentT != nullptr) {
-            TransactionNode* temp = currentT;
-            currentT = currentT->next;
-            delete temp;
-        }
-        
-        // Clean up review nodes
-        ReviewNode* currentR = reviewHead;
-        while (currentR != nullptr) {
-            ReviewNode* temp = currentR;
-            currentR = currentR->next;
-            delete temp;
-        }
+LinkedList::~LinkedList() {
+    // Clean up transaction nodes
+    TransactionNode* currentT = transactionHead;
+    while (currentT != nullptr) {
+        TransactionNode* temp = currentT;
+        currentT = currentT->next;
+        delete temp;
     }
     
-    void addTransaction(const Transaction& t) {
-        TransactionNode* newNode = new TransactionNode(t);
-        if (transactionHead == nullptr) {
-            transactionHead = newNode;
-        } else {
-            TransactionNode* current = transactionHead;
-            while (current->next != nullptr) {
-                current = current->next;
-            }
-            current->next = newNode;
-        }
-        transactionCount++;
+    // Clean up review nodes
+    ReviewNode* currentR = reviewHead;
+    while (currentR != nullptr) {
+        ReviewNode* temp = currentR;
+        currentR = currentR->next;
+        delete temp;
     }
-    
-    void addReview(const Review& r) {
-        ReviewNode* newNode = new ReviewNode(r);
-        if (reviewHead == nullptr) {
-            reviewHead = newNode;
-        } else {
-            ReviewNode* current = reviewHead;
-            while (current->next != nullptr) {
-                current = current->next;
-            }
-            current->next = newNode;
-        }
-        reviewCount++;
-    }
-    
-    // Sort transactions by date using different sorting algorithms
-    void sortTransactionsByDate(int sortChoice, long long& duration_ms) {
-        auto start = std::chrono::high_resolution_clock::now();
-        
-        if (sortChoice == 1) {
-            // Bubble Sort
-            bubbleSortTransactions();
-        } else if (sortChoice == 2) {
-            // Insertion Sort
-            insertionSortTransactions();
-        } else if (sortChoice == 3) {
-            // Selection Sort
-            selectionSortTransactions();
-        } else if (sortChoice == 4) {
-            // Merge Sort
-            transactionHead = mergeSortTransactions(transactionHead);
-        }
-        
-        auto end = std::chrono::high_resolution_clock::now();
-        duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        
-        // Display results
-        std::cout << "\nSorting completed in " << duration_ms << " ms\n";
-        countTransactionsByDate();
-    }
-    
-    // Bubble Sort implementation for linked list
-    void bubbleSortTransactions() {
-        if (transactionHead == nullptr || transactionHead->next == nullptr) return;
-        
-        bool swapped;
-        TransactionNode* current;
-        TransactionNode* last = nullptr;
-        
-        do {
-            swapped = false;
-            current = transactionHead;
-            
-            while (current->next != last) {
-                if (current->data.date > current->next->data.date) {
-                    // Swap data (not nodes)
-                    Transaction temp = current->data;
-                    current->data = current->next->data;
-                    current->next->data = temp;
-                    swapped = true;
-                }
-                current = current->next;
-            }
-            last = current;
-        } while (swapped);
-    }
-    
-    // Insertion Sort implementation for linked list
-    void insertionSortTransactions() {
-        if (transactionHead == nullptr || transactionHead->next == nullptr) return;
-        
-        TransactionNode* sorted = nullptr;
+}
+
+void LinkedList::addTransaction(const Transaction& t) {
+    TransactionNode* newNode = new TransactionNode(t);
+    if (transactionHead == nullptr) {
+        transactionHead = newNode;
+    } else {
         TransactionNode* current = transactionHead;
-        
-        while (current != nullptr) {
-            TransactionNode* next = current->next;
-            
-            if (sorted == nullptr || sorted->data.date >= current->data.date) {
-                current->next = sorted;
-                sorted = current;
-            } else {
-                TransactionNode* search = sorted;
-                while (search->next != nullptr && search->next->data.date < current->data.date) {
-                    search = search->next;
-                }
-                current->next = search->next;
-                search->next = current;
-            }
-            
-            current = next;
+        while (current->next != nullptr) {
+            current = current->next;
         }
-        
-        transactionHead = sorted;
+        current->next = newNode;
+    }
+    transactionCount++;
+}
+
+void LinkedList::addReview(const Review& r) {
+    ReviewNode* newNode = new ReviewNode(r);
+    if (reviewHead == nullptr) {
+        reviewHead = newNode;
+    } else {
+        ReviewNode* current = reviewHead;
+        while (current->next != nullptr) {
+            current = current->next;
+        }
+        current->next = newNode;
+    }
+    reviewCount++;
+}
+
+void LinkedList::sortTransactionsByDate(int sortChoice, long long& duration_ms) {
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    if (sortChoice == 1) {
+        // Bubble Sort
+        bubbleSortTransactions();
+    } else if (sortChoice == 2) {
+        // Insertion Sort
+        insertionSortTransactions();
+    } else if (sortChoice == 3) {
+        // Selection Sort
+        selectionSortTransactions();
+    } else if (sortChoice == 4) {
+        // Merge Sort
+        transactionHead = mergeSortTransactions(transactionHead);
     }
     
-    // Selection Sort implementation for linked list
-    void selectionSortTransactions() {
-        if (transactionHead == nullptr || transactionHead->next == nullptr) return;
+    auto end = std::chrono::high_resolution_clock::now();
+    duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    
+    // Display results
+    std::cout << "\nSorting completed in " << duration_ms << " ms\n";
+    countTransactionsByDate();
+}
+
+void LinkedList::bubbleSortTransactions() {
+    if (transactionHead == nullptr || transactionHead->next == nullptr) return;
+    
+    bool swapped;
+    TransactionNode* current;
+    TransactionNode* last = nullptr;
+    
+    do {
+        swapped = false;
+        current = transactionHead;
         
-        TransactionNode* current = transactionHead;
-        
-        while (current != nullptr) {
-            TransactionNode* min = current;
-            TransactionNode* r = current->next;
-            
-            while (r != nullptr) {
-                if (r->data.date < min->data.date) {
-                    min = r;
-                }
-                r = r->next;
-            }
-            
-            if (min != current) {
+        while (current->next != last) {
+            if (current->data.date > current->next->data.date) {
                 // Swap data (not nodes)
                 Transaction temp = current->data;
-                current->data = min->data;
-                min->data = temp;
+                current->data = current->next->data;
+                current->next->data = temp;
+                swapped = true;
             }
-            
             current = current->next;
         }
-    }
+        last = current;
+    } while (swapped);
+}
+
+void LinkedList::insertionSortTransactions() {
+    if (transactionHead == nullptr || transactionHead->next == nullptr) return;
     
-    // Merge Sort implementation for linked list
-    TransactionNode* mergeSortTransactions(TransactionNode* head) {
-        // Base case
-        if (head == nullptr || head->next == nullptr) {
-            return head;
+    TransactionNode* sorted = nullptr;
+    TransactionNode* current = transactionHead;
+    
+    while (current != nullptr) {
+        TransactionNode* next = current->next;
+        
+        if (sorted == nullptr || sorted->data.date >= current->data.date) {
+            current->next = sorted;
+            sorted = current;
+        } else {
+            TransactionNode* search = sorted;
+            while (search->next != nullptr && search->next->data.date < current->data.date) {
+                search = search->next;
+            }
+            current->next = search->next;
+            search->next = current;
         }
         
-        // Split the list into two halves
-        TransactionNode* middle = getMiddle(head);
-        TransactionNode* nextOfMiddle = middle->next;
-        middle->next = nullptr;
-        
-        // Recursively sort both lists
-        TransactionNode* left = mergeSortTransactions(head);
-        TransactionNode* right = mergeSortTransactions(nextOfMiddle);
-        
-        // Merge the sorted lists
-        TransactionNode* sortedList = sortedMerge(left, right);
-        return sortedList;
+        current = next;
     }
     
-    TransactionNode* getMiddle(TransactionNode* head) {
-        if (head == nullptr) return head;
+    transactionHead = sorted;
+}
+
+void LinkedList::selectionSortTransactions() {
+    if (transactionHead == nullptr || transactionHead->next == nullptr) return;
+    
+    TransactionNode* current = transactionHead;
+    
+    while (current != nullptr) {
+        TransactionNode* min = current;
+        TransactionNode* r = current->next;
         
-        TransactionNode* slow = head;
-        TransactionNode* fast = head->next;
+        while (r != nullptr) {
+            if (r->data.date < min->data.date) {
+                min = r;
+            }
+            r = r->next;
+        }
         
-        while (fast != nullptr) {
+        if (min != current) {
+            // Swap data (not nodes)
+            Transaction temp = current->data;
+            current->data = min->data;
+            min->data = temp;
+        }
+        
+        current = current->next;
+    }
+}
+
+TransactionNode* LinkedList::mergeSortTransactions(TransactionNode* head) {
+    // Base case
+    if (head == nullptr || head->next == nullptr) {
+        return head;
+    }
+    
+    // Split the list into two halves
+    TransactionNode* middle = getMiddle(head);
+    TransactionNode* nextOfMiddle = middle->next;
+    middle->next = nullptr;
+    
+    // Recursively sort both lists
+    TransactionNode* left = mergeSortTransactions(head);
+    TransactionNode* right = mergeSortTransactions(nextOfMiddle);
+    
+    // Merge the sorted lists
+    TransactionNode* sortedList = sortedMerge(left, right);
+    return sortedList;
+}
+
+TransactionNode* LinkedList::getMiddle(TransactionNode* head) {
+    if (head == nullptr) return head;
+    
+    TransactionNode* slow = head;
+    TransactionNode* fast = head->next;
+    
+    while (fast != nullptr) {
+        fast = fast->next;
+        if (fast != nullptr) {
+            slow = slow->next;
             fast = fast->next;
-            if (fast != nullptr) {
-                slow = slow->next;
-                fast = fast->next;
-            }
         }
-        return slow;
+    }
+    return slow;
+}
+
+TransactionNode* LinkedList::sortedMerge(TransactionNode* a, TransactionNode* b) {
+    TransactionNode* result = nullptr;
+    
+    // Base cases
+    if (a == nullptr) return b;
+    if (b == nullptr) return a;
+    
+    // Pick smaller value
+    if (a->data.date <= b->data.date) {
+        result = a;
+        result->next = sortedMerge(a->next, b);
+    } else {
+        result = b;
+        result->next = sortedMerge(a, b->next);
+    }
+    return result;
+}
+
+void LinkedList::countTransactionsByDate() {
+    std::map<std::string, int> dateCounts;
+    TransactionNode* current = transactionHead;
+    
+    while (current != nullptr) {
+        dateCounts[current->data.date]++;
+        current = current->next;
     }
     
-    TransactionNode* sortedMerge(TransactionNode* a, TransactionNode* b) {
-        TransactionNode* result = nullptr;
-        
-        // Base cases
-        if (a == nullptr) return b;
-        if (b == nullptr) return a;
-        
-        // Pick smaller value
-        if (a->data.date <= b->data.date) {
-            result = a;
-            result->next = sortedMerge(a->next, b);
-        } else {
-            result = b;
-            result->next = sortedMerge(a, b->next);
-        }
-        return result;
+    std::cout << "\nTransaction Counts by Date:\n";
+    for (const auto& pair : dateCounts) {
+        std::cout << pair.first << ": " << pair.second << " transactions\n";
     }
+}
+
+void LinkedList::calculateElectronicsCreditCardPercentage(int searchChoice, long long& duration_ms) {
+    auto start = std::chrono::high_resolution_clock::now();
     
-    // Count transactions by date and display
-    void countTransactionsByDate() {
-        std::map<std::string, int> dateCounts;
+    int totalElectronics = 0;
+    int electronicsCreditCard = 0;
+    
+    if (searchChoice == 1) {
+        // Linear Search
         TransactionNode* current = transactionHead;
-        
         while (current != nullptr) {
-            dateCounts[current->data.date]++;
+            if (current->data.category == "Electronics") {
+                totalElectronics++;
+                if (current->data.payment_method == "Credit Card") {
+                    electronicsCreditCard++;
+                }
+            }
             current = current->next;
         }
+    } else {
+        // For other search methods in a linked list, we would need to
+        // convert to a vector first, which defeats the purpose of using linked list
+        // So we'll use linear search for all cases
+        std::cout << "\nNote: Linked lists are best suited for linear search. "
+                << "Other search methods require conversion to arrays.\n";
         
-        std::cout << "\nTransaction Counts by Date:\n";
-        for (const auto& pair : dateCounts) {
-            std::cout << pair.first << ": " << pair.second << " transactions\n";
+        TransactionNode* current = transactionHead;
+        while (current != nullptr) {
+            if (current->data.category == "Electronics") {
+                totalElectronics++;
+                if (current->data.payment_method == "Credit Card") {
+                    electronicsCreditCard++;
+                }
+            }
+            current = current->next;
         }
     }
     
-    // Calculate Electronics purchases with Credit Card percentage
-    void calculateElectronicsCreditCardPercentage(int searchChoice, long long& duration_ms) {
-        auto start = std::chrono::high_resolution_clock::now();
-        
-        int totalElectronics = 0;
-        int electronicsCreditCard = 0;
-        
-        if (searchChoice == 1) {
-            // Linear Search
-            TransactionNode* current = transactionHead;
-            while (current != nullptr) {
-                if (current->data.category == "Electronics") {
-                    totalElectronics++;
-                    if (current->data.payment_method == "Credit Card") {
-                        electronicsCreditCard++;
-                    }
-                }
-                current = current->next;
+    auto end = std::chrono::high_resolution_clock::now();
+    duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    
+    double percentage = (totalElectronics > 0) ? 
+        (static_cast<double>(electronicsCreditCard) / totalElectronics) * 100.0 : 0.0;
+    
+    std::cout << "\nSearch completed in " << duration_ms << " ms\n";
+    std::cout << "Total Electronics purchases: " << totalElectronics << "\n";
+    std::cout << "Electronics purchases with Credit Card: " << electronicsCreditCard << "\n";
+    std::cout << "Percentage: " << percentage << "%\n";
+}
+
+void LinkedList::findFrequentWordsInOneStarReviews(int searchChoice, long long& duration_ms) {
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    std::vector<std::string> oneStarReviewTexts;
+    
+    if (searchChoice == 1) {
+        // Linear Search
+        ReviewNode* current = reviewHead;
+        while (current != nullptr) {
+            if (current->data.rating == 1) {
+                oneStarReviewTexts.push_back(current->data.review_text);
             }
-        } else {
-            // For other search methods in a linked list, we would need to
-            // convert to a vector first, which defeats the purpose of using linked list
-            // So we'll use linear search for all cases
-            std::cout << "\nNote: Linked lists are best suited for linear search. "
-                      << "Other search methods require conversion to arrays.\n";
-            
-            TransactionNode* current = transactionHead;
-            while (current != nullptr) {
-                if (current->data.category == "Electronics") {
-                    totalElectronics++;
-                    if (current->data.payment_method == "Credit Card") {
-                        electronicsCreditCard++;
-                    }
-                }
-                current = current->next;
-            }
+            current = current->next;
         }
+    } else {
+        // For other search methods in a linked list, we would need to
+        // convert to a vector first, which defeats the purpose of using linked list
+        // So we'll use linear search for all cases
+        std::cout << "\nNote: Linked lists are best suited for linear search. "
+                << "Other search methods require conversion to arrays.\n";
         
-        auto end = std::chrono::high_resolution_clock::now();
-        duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        
-        double percentage = (totalElectronics > 0) ? 
-            (static_cast<double>(electronicsCreditCard) / totalElectronics) * 100.0 : 0.0;
-        
-        std::cout << "\nSearch completed in " << duration_ms << " ms\n";
-        std::cout << "Total Electronics purchases: " << totalElectronics << "\n";
-        std::cout << "Electronics purchases with Credit Card: " << electronicsCreditCard << "\n";
-        std::cout << "Percentage: " << percentage << "%\n";
+        ReviewNode* current = reviewHead;
+        while (current != nullptr) {
+            if (current->data.rating == 1) {
+                oneStarReviewTexts.push_back(current->data.review_text);
+            }
+            current = current->next;
+        }
     }
     
-    // Find frequent words in 1-star reviews
-    void findFrequentWordsInOneStarReviews(int searchChoice, long long& duration_ms) {
-        auto start = std::chrono::high_resolution_clock::now();
-        
-        std::vector<std::string> oneStarReviewTexts;
-        
-        if (searchChoice == 1) {
-            // Linear Search
-            ReviewNode* current = reviewHead;
-            while (current != nullptr) {
-                if (current->data.rating == 1) {
-                    oneStarReviewTexts.push_back(current->data.review_text);
-                }
-                current = current->next;
-            }
-        } else {
-            // For other search methods in a linked list, we would need to
-            // convert to a vector first, which defeats the purpose of using linked list
-            // So we'll use linear search for all cases
-            std::cout << "\nNote: Linked lists are best suited for linear search. "
-                      << "Other search methods require conversion to arrays.\n";
+    // Process the review texts to find frequent words
+    std::map<std::string, int> wordFrequency;
+    for (const auto& text : oneStarReviewTexts) {
+        std::istringstream iss(text);
+        std::string word;
+        while (iss >> word) {
+            // Convert to lowercase and remove punctuation
+            std::transform(word.begin(), word.end(), word.begin(), ::tolower);
+            word.erase(std::remove_if(word.begin(), word.end(), 
+                [](char c) { return std::ispunct(c); }), word.end());
             
-            ReviewNode* current = reviewHead;
-            while (current != nullptr) {
-                if (current->data.rating == 1) {
-                    oneStarReviewTexts.push_back(current->data.review_text);
-                }
-                current = current->next;
+            if (word.length() > 2) { // Skip very short words
+                wordFrequency[word]++;
             }
-        }
-        
-        // Process the review texts to find frequent words
-        std::map<std::string, int> wordFrequency;
-        for (const auto& text : oneStarReviewTexts) {
-            std::istringstream iss(text);
-            std::string word;
-            while (iss >> word) {
-                // Convert to lowercase and remove punctuation
-                std::transform(word.begin(), word.end(), word.begin(), ::tolower);
-                word.erase(std::remove_if(word.begin(), word.end(), 
-                    [](char c) { return std::ispunct(c); }), word.end());
-                
-                if (word.length() > 2) { // Skip very short words
-                    wordFrequency[word]++;
-                }
-            }
-        }
-        
-        auto end = std::chrono::high_resolution_clock::now();
-        duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        
-        // Convert to vector for sorting
-        std::vector<std::pair<std::string, int>> wordFreqVec(wordFrequency.begin(), wordFrequency.end());
-        std::sort(wordFreqVec.begin(), wordFreqVec.end(), 
-            [](const auto& a, const auto& b) { return a.second > b.second; });
-        
-        std::cout << "\nSearch completed in " << duration_ms << " ms\n";
-        std::cout << "Number of 1-star reviews: " << oneStarReviewTexts.size() << "\n";
-        std::cout << "Most frequent words in 1-star reviews:\n";
-        
-        int count = 0;
-        for (const auto& pair : wordFreqVec) {
-            if (count++ >= 10) break; // Show top 10
-            std::cout << pair.first << ": " << pair.second << " occurrences\n";
         }
     }
-};
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    
+    // Convert to vector for sorting
+    std::vector<std::pair<std::string, int>> wordFreqVec(wordFrequency.begin(), wordFrequency.end());
+    std::sort(wordFreqVec.begin(), wordFreqVec.end(), 
+        [](const auto& a, const auto& b) { return a.second > b.second; });
+    
+    std::cout << "\nSearch completed in " << duration_ms << " ms\n";
+    std::cout << "Number of 1-star reviews: " << oneStarReviewTexts.size() << "\n";
+    std::cout << "Most frequent words in 1-star reviews:\n";
+    
+    int count = 0;
+    for (const auto& pair : wordFreqVec) {
+        if (count++ >= 10) break; // Show top 10
+        std::cout << pair.first << ": " << pair.second << " occurrences\n";
+    }
+}
 
 // Load transactions from CSV
 void loadTransactions(LinkedList& list, const std::string& filename) {
