@@ -238,17 +238,20 @@ void LinkedList::countTransactionsByDate() {
     }
 }
 
-void LinkedList::calculateElectronicsCreditCardPercentage(int searchChoice, long long& duration_ms) {
+void LinkedList::calculateElectronicsCreditCardPercentage(int searchChoice, int sortChoice, long long& duration_ms) {
     auto start = std::chrono::high_resolution_clock::now();
     
     int totalElectronics = 0;
     int electronicsCreditCard = 0;
+    std::vector<Transaction> electronicsTransactions;
     
+    // First use search algorithm to find Electronics transactions
     if (searchChoice == 1) {
         // Linear Search
         TransactionNode* current = transactionHead;
         while (current != nullptr) {
             if (current->data.category == "Electronics") {
+                electronicsTransactions.push_back(current->data);
                 totalElectronics++;
                 if (current->data.payment_method == "Credit Card") {
                     electronicsCreditCard++;
@@ -266,6 +269,7 @@ void LinkedList::calculateElectronicsCreditCardPercentage(int searchChoice, long
         TransactionNode* current = transactionHead;
         while (current != nullptr) {
             if (current->data.category == "Electronics") {
+                electronicsTransactions.push_back(current->data);
                 totalElectronics++;
                 if (current->data.payment_method == "Credit Card") {
                     electronicsCreditCard++;
@@ -275,46 +279,76 @@ void LinkedList::calculateElectronicsCreditCardPercentage(int searchChoice, long
         }
     }
     
+    // Now sort the electronics transactions by price
+    if (sortChoice == 1) {
+        // Bubble Sort
+        for (size_t i = 0; i < electronicsTransactions.size(); i++) {
+            for (size_t j = 0; j < electronicsTransactions.size() - i - 1; j++) {
+                if (electronicsTransactions[j].price > electronicsTransactions[j + 1].price) {
+                    std::swap(electronicsTransactions[j], electronicsTransactions[j + 1]);
+                }
+            }
+        }
+    } else if (sortChoice == 2) {
+        // Insertion Sort
+        for (size_t i = 1; i < electronicsTransactions.size(); i++) {
+            auto key = electronicsTransactions[i];
+            int j = i - 1;
+            while (j >= 0 && electronicsTransactions[j].price > key.price) {
+                electronicsTransactions[j + 1] = electronicsTransactions[j];
+                j--;
+            }
+            electronicsTransactions[j + 1] = key;
+        }
+    } else if (sortChoice == 3) {
+        // Selection Sort
+        for (size_t i = 0; i < electronicsTransactions.size(); i++) {
+            size_t min_idx = i;
+            for (size_t j = i + 1; j < electronicsTransactions.size(); j++) {
+                if (electronicsTransactions[j].price < electronicsTransactions[min_idx].price) {
+                    min_idx = j;
+                }
+            }
+            std::swap(electronicsTransactions[i], electronicsTransactions[min_idx]);
+        }
+    } else if (sortChoice == 4) {
+        // Quick Sort (using std::sort)
+        std::sort(electronicsTransactions.begin(), electronicsTransactions.end(), 
+            [](const auto& a, const auto& b) { return a.price < b.price; });
+    }
+    
     auto end = std::chrono::high_resolution_clock::now();
     duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     
     double percentage = (totalElectronics > 0) ? 
         (static_cast<double>(electronicsCreditCard) / totalElectronics) * 100.0 : 0.0;
     
-    std::cout << "\nSearch completed in " << duration_ms << " ms\n";
+    std::cout << "\nSearch and sort completed in " << duration_ms << " ms\n";
     std::cout << "Total Electronics purchases: " << totalElectronics << "\n";
     std::cout << "Electronics purchases with Credit Card: " << electronicsCreditCard << "\n";
     std::cout << "Percentage: " << percentage << "%\n";
+    
+    // Display some sorted electronics transactions (top 5)
+    std::cout << "\nSorted Electronics Transactions (by price, ascending):\n";
+    int count = 0;
+    for (const auto& t : electronicsTransactions) {
+        if (count++ >= 5) break;
+        std::cout << t.product << " - $" << t.price << " (" << t.payment_method << ")\n";
+    }
 }
 
-void LinkedList::findFrequentWordsInOneStarReviews(int searchChoice, long long& duration_ms) {
+void LinkedList::findFrequentWordsInOneStarReviews(int sortChoice, long long& duration_ms) {
     auto start = std::chrono::high_resolution_clock::now();
     
     std::vector<std::string> oneStarReviewTexts;
     
-    if (searchChoice == 1) {
-        // Linear Search
-        ReviewNode* current = reviewHead;
-        while (current != nullptr) {
-            if (current->data.rating == 1) {
-                oneStarReviewTexts.push_back(current->data.review_text);
-            }
-            current = current->next;
+    // Linear Search to find 1-star reviews (this part stays the same regardless of sort choice)
+    ReviewNode* current = reviewHead;
+    while (current != nullptr) {
+        if (current->data.rating == 1) {
+            oneStarReviewTexts.push_back(current->data.review_text);
         }
-    } else {
-        // For other search methods in a linked list, we would need to
-        // convert to a vector first, which defeats the purpose of using linked list
-        // So we'll use linear search for all cases
-        std::cout << "\nNote: Linked lists are best suited for linear search. "
-                << "Other search methods require conversion to arrays.\n";
-        
-        ReviewNode* current = reviewHead;
-        while (current != nullptr) {
-            if (current->data.rating == 1) {
-                oneStarReviewTexts.push_back(current->data.review_text);
-            }
-            current = current->next;
-        }
+        current = current->next;
     }
     
     // Process the review texts to find frequent words
@@ -334,15 +368,51 @@ void LinkedList::findFrequentWordsInOneStarReviews(int searchChoice, long long& 
         }
     }
     
+    // Convert to vector for sorting
+    std::vector<std::pair<std::string, int>> wordFreqVec(wordFrequency.begin(), wordFrequency.end());
+    
+    // Apply different sorting algorithms based on user choice
+    if (sortChoice == 1) {
+        // Bubble Sort
+        for (size_t i = 0; i < wordFreqVec.size(); i++) {
+            for (size_t j = 0; j < wordFreqVec.size() - i - 1; j++) {
+                if (wordFreqVec[j].second < wordFreqVec[j + 1].second) {
+                    std::swap(wordFreqVec[j], wordFreqVec[j + 1]);
+                }
+            }
+        }
+    } else if (sortChoice == 2) {
+        // Insertion Sort
+        for (size_t i = 1; i < wordFreqVec.size(); i++) {
+            auto key = wordFreqVec[i];
+            int j = i - 1;
+            while (j >= 0 && wordFreqVec[j].second < key.second) {
+                wordFreqVec[j + 1] = wordFreqVec[j];
+                j--;
+            }
+            wordFreqVec[j + 1] = key;
+        }
+    } else if (sortChoice == 3) {
+        // Selection Sort
+        for (size_t i = 0; i < wordFreqVec.size(); i++) {
+            size_t max_idx = i;
+            for (size_t j = i + 1; j < wordFreqVec.size(); j++) {
+                if (wordFreqVec[j].second > wordFreqVec[max_idx].second) {
+                    max_idx = j;
+                }
+            }
+            std::swap(wordFreqVec[i], wordFreqVec[max_idx]);
+        }
+    } else if (sortChoice == 4) {
+        // Quick Sort (using std::sort)
+        std::sort(wordFreqVec.begin(), wordFreqVec.end(), 
+            [](const auto& a, const auto& b) { return a.second > b.second; });
+    }
+    
     auto end = std::chrono::high_resolution_clock::now();
     duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     
-    // Convert to vector for sorting
-    std::vector<std::pair<std::string, int>> wordFreqVec(wordFrequency.begin(), wordFrequency.end());
-    std::sort(wordFreqVec.begin(), wordFreqVec.end(), 
-        [](const auto& a, const auto& b) { return a.second > b.second; });
-    
-    std::cout << "\nSearch completed in " << duration_ms << " ms\n";
+    std::cout << "\nAnalysis completed in " << duration_ms << " ms\n";
     std::cout << "Number of 1-star reviews: " << oneStarReviewTexts.size() << "\n";
     std::cout << "Most frequent words in 1-star reviews:\n";
     
@@ -475,17 +545,27 @@ int main() {
             std::cout << "Enter choice (1-4): ";
             int search_choice;
             std::cin >> search_choice;
-            list.calculateElectronicsCreditCardPercentage(search_choice, duration_ms);
-        } else if (question_choice == 3) {
-            std::cout << "\nChoose Search Algorithm:\n";
-            std::cout << "1. Linear Search\n";
-            std::cout << "2. Binary Search (Note: Using Linear Search for Linked List)\n";
-            std::cout << "3. Jump Search (Note: Using Linear Search for Linked List)\n";
-            std::cout << "4. Interpolation Search (Note: Using Linear Search for Linked List)\n";
+            
+            std::cout << "\nChoose Sorting Algorithm:\n";
+            std::cout << "1. Bubble Sort\n";
+            std::cout << "2. Insertion Sort\n";
+            std::cout << "3. Selection Sort\n";
+            std::cout << "4. Quick Sort\n";
             std::cout << "Enter choice (1-4): ";
-            int search_choice;
-            std::cin >> search_choice;
-            list.findFrequentWordsInOneStarReviews(search_choice, duration_ms);
+            int sort_choice;
+            std::cin >> sort_choice;
+            
+            list.calculateElectronicsCreditCardPercentage(search_choice, sort_choice, duration_ms);
+        } else if (question_choice == 3) {
+            std::cout << "\nChoose Sorting Algorithm:\n";
+            std::cout << "1. Bubble Sort\n";
+            std::cout << "2. Insertion Sort\n";
+            std::cout << "3. Selection Sort\n";
+            std::cout << "4. Quick Sort\n";
+            std::cout << "Enter choice (1-4): ";
+            int sort_choice;
+            std::cin >> sort_choice;
+            list.findFrequentWordsInOneStarReviews(sort_choice, duration_ms);
         }
     }
 
