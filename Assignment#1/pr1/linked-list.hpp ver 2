@@ -3,7 +3,7 @@
 
 #include <string>
 
-// Transaction structure
+// Struct to hold transaction data
 struct Transaction {
     std::string customer_id;
     std::string product;
@@ -13,7 +13,7 @@ struct Transaction {
     std::string payment_method;
 };
 
-// Review structure
+// Struct to hold review data
 struct Review {
     std::string product_id;
     std::string customer_id;
@@ -21,7 +21,7 @@ struct Review {
     std::string review_text;
 };
 
-// Transaction node
+// Node for transaction linked list
 struct TransactionNode {
     Transaction data;
     TransactionNode* next;
@@ -29,7 +29,7 @@ struct TransactionNode {
     TransactionNode(const Transaction& t) : data(t), next(nullptr) {}
 };
 
-// Review node
+// Node for review linked list
 struct ReviewNode {
     Review data;
     ReviewNode* next;
@@ -37,7 +37,16 @@ struct ReviewNode {
     ReviewNode(const Review& r) : data(r), next(nullptr) {}
 };
 
-// LinkedList class
+// Node for word frequency
+struct WordFreqNode {
+    std::string word;
+    int frequency;
+    WordFreqNode* next;
+    
+    WordFreqNode(const std::string& w, int f) : word(w), frequency(f), next(nullptr) {}
+};
+
+// Main LinkedList class
 class LinkedList {
 private:
     TransactionNode* transactionHead;
@@ -45,18 +54,16 @@ private:
     int transactionCount;
     int reviewCount;
     
-    // Helper methods for merge sort
+    // Helper methods for sorting transactions
     TransactionNode* getMiddle(TransactionNode* head);
     TransactionNode* sortedMerge(TransactionNode* a, TransactionNode* b);
+    TransactionNode* mergeSortTransactionsByPrice(TransactionNode* head);
+    TransactionNode* sortedMergeByPrice(TransactionNode* a, TransactionNode* b);
     
-    // Sorting implementations
-    void bubbleSortTransactions();
-    void insertionSortTransactions();
-    void selectionSortTransactions();
-    TransactionNode* mergeSortTransactions(TransactionNode* head);
-    
-    // Method to display sorted transactions
-    void displaySortedTransactions();
+    // Helper methods for word frequency sorting
+    WordFreqNode* getMiddleWordFreq(WordFreqNode* head);
+    WordFreqNode* sortedMergeWordFreq(WordFreqNode* a, WordFreqNode* b);
+    WordFreqNode* mergeSortWordFreq(WordFreqNode* head);
     
 public:
     LinkedList();
@@ -65,10 +72,27 @@ public:
     void addTransaction(const Transaction& t);
     void addReview(const Review& r);
     
+    // Sort transactions by date
     void sortTransactionsByDate(int sortChoice, long long& duration_ms);
+    void bubbleSortTransactions();
+    void insertionSortTransactions();
+    void selectionSortTransactions();
+    TransactionNode* mergeSortTransactions(TransactionNode* head);
+    void displaySortedTransactions();
     void countTransactionsByDate();
+    
+    // Calculate Electronics Credit Card percentage
     void calculateElectronicsCreditCardPercentage(int searchChoice, int sortChoice, long long& duration_ms);
+    
+    // Frequent words in 1-star reviews
     void findFrequentWordsInOneStarReviews(int sortChoice, long long& duration_ms);
 };
+
+// Helper function for standardizing dates
+std::string standardizeDate(const std::string& date);
+
+// Functions to load data from files
+void loadTransactions(LinkedList& list, const std::string& filename);
+void loadReviews(LinkedList& list, const std::string& filename);
 
 #endif // LINKED_LIST_HPP
