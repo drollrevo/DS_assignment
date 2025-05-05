@@ -3,7 +3,6 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <vector>
 #include <chrono>
 #include <map>
 #include <algorithm>
@@ -286,7 +285,9 @@ void LinkedList::calculateElectronicsCreditCardPercentage(int searchChoice, int 
     
     int totalElectronics = 0;
     int electronicsCreditCard = 0;
-    std::vector<Transaction> electronicsTransactions;
+    
+    // Create a new linked list for electronics transactions
+    TransactionNode* electronicsHead = nullptr;
     
     // First use search algorithm to find Electronics transactions
     if (searchChoice == 1) {
@@ -294,7 +295,11 @@ void LinkedList::calculateElectronicsCreditCardPercentage(int searchChoice, int 
         TransactionNode* current = transactionHead;
         while (current != nullptr) {
             if (current->data.category == "Electronics") {
-                electronicsTransactions.push_back(current->data);
+                // Add this transaction to our electronics list
+                TransactionNode* newNode = new TransactionNode(current->data);
+                newNode->next = electronicsHead;
+                electronicsHead = newNode;
+                
                 totalElectronics++;
                 if (current->data.payment_method == "Credit Card") {
                     electronicsCreditCard++;
@@ -304,7 +309,6 @@ void LinkedList::calculateElectronicsCreditCardPercentage(int searchChoice, int 
         }
     } else {
         // For other search methods in a linked list, we would need to
-        // convert to a vector first, which defeats the purpose of using linked list
         // So we'll use linear search for all cases
         std::cout << "\nNote: Linked lists are best suited for linear search. "
                 << "Other search methods require conversion to arrays.\n";
@@ -312,7 +316,11 @@ void LinkedList::calculateElectronicsCreditCardPercentage(int searchChoice, int 
         TransactionNode* current = transactionHead;
         while (current != nullptr) {
             if (current->data.category == "Electronics") {
-                electronicsTransactions.push_back(current->data);
+                // Add this transaction to our electronics list
+                TransactionNode* newNode = new TransactionNode(current->data);
+                newNode->next = electronicsHead;
+                electronicsHead = newNode;
+                
                 totalElectronics++;
                 if (current->data.payment_method == "Credit Card") {
                     electronicsCreditCard++;
@@ -325,39 +333,83 @@ void LinkedList::calculateElectronicsCreditCardPercentage(int searchChoice, int 
     // Now sort the electronics transactions by price
     if (sortChoice == 1) {
         // Bubble Sort
-        for (size_t i = 0; i < electronicsTransactions.size(); i++) {
-            for (size_t j = 0; j < electronicsTransactions.size() - i - 1; j++) {
-                if (electronicsTransactions[j].price > electronicsTransactions[j + 1].price) {
-                    std::swap(electronicsTransactions[j], electronicsTransactions[j + 1]);
+        if (electronicsHead != nullptr && electronicsHead->next != nullptr) {
+            bool swapped;
+            TransactionNode *ptr1;
+            TransactionNode *lptr = nullptr;
+            
+            do {
+                swapped = false;
+                ptr1 = electronicsHead;
+                
+                while (ptr1->next != lptr) {
+                    if (ptr1->data.price > ptr1->next->data.price) {
+                        // Swap data
+                        Transaction temp = ptr1->data;
+                        ptr1->data = ptr1->next->data;
+                        ptr1->next->data = temp;
+                        swapped = true;
+                    }
+                    ptr1 = ptr1->next;
                 }
-            }
+                lptr = ptr1;
+            } while (swapped);
         }
     } else if (sortChoice == 2) {
         // Insertion Sort
-        for (size_t i = 1; i < electronicsTransactions.size(); i++) {
-            auto key = electronicsTransactions[i];
-            int j = i - 1;
-            while (j >= 0 && electronicsTransactions[j].price > key.price) {
-                electronicsTransactions[j + 1] = electronicsTransactions[j];
-                j--;
+        if (electronicsHead != nullptr && electronicsHead->next != nullptr) {
+            TransactionNode* sorted = nullptr;
+            TransactionNode* current = electronicsHead;
+            
+            while (current != nullptr) {
+                TransactionNode* next = current->next;
+                
+                if (sorted == nullptr || sorted->data.price >= current->data.price) {
+                    current->next = sorted;
+                    sorted = current;
+                } else {
+                    TransactionNode* search = sorted;
+                    while (search->next != nullptr && search->next->data.price < current->data.price) {
+                        search = search->next;
+                    }
+                    current->next = search->next;
+                    search->next = current;
+                }
+                
+                current = next;
             }
-            electronicsTransactions[j + 1] = key;
+            
+            electronicsHead = sorted;
         }
     } else if (sortChoice == 3) {
         // Selection Sort
-        for (size_t i = 0; i < electronicsTransactions.size(); i++) {
-            size_t min_idx = i;
-            for (size_t j = i + 1; j < electronicsTransactions.size(); j++) {
-                if (electronicsTransactions[j].price < electronicsTransactions[min_idx].price) {
-                    min_idx = j;
+        if (electronicsHead != nullptr && electronicsHead->next != nullptr) {
+            TransactionNode* current = electronicsHead;
+            
+            while (current != nullptr) {
+                TransactionNode* min = current;
+                TransactionNode* r = current->next;
+                
+                while (r != nullptr) {
+                    if (r->data.price < min->data.price) {
+                        min = r;
+                    }
+                    r = r->next;
                 }
+                
+                if (min != current) {
+                    // Swap data
+                    Transaction temp = current->data;
+                    current->data = min->data;
+                    min->data = temp;
+                }
+                
+                current = current->next;
             }
-            std::swap(electronicsTransactions[i], electronicsTransactions[min_idx]);
         }
     } else if (sortChoice == 4) {
-        // Quick Sort (using std::sort)
-        std::sort(electronicsTransactions.begin(), electronicsTransactions.end(), 
-            [](const auto& a, const auto& b) { return a.price < b.price; });
+        // Merge Sort
+        electronicsHead = mergeSortTransactionsByPrice(electronicsHead);
     }
     
     auto end = std::chrono::high_resolution_clock::now();
@@ -374,96 +426,279 @@ void LinkedList::calculateElectronicsCreditCardPercentage(int searchChoice, int 
     // Display some sorted electronics transactions (top 5)
     std::cout << "\nSorted Electronics Transactions (by price, ascending):\n";
     int count = 0;
-    for (const auto& t : electronicsTransactions) {
-        if (count++ >= 5) break;
-        std::cout << t.product << " - $" << t.price << " (" << t.payment_method << ")\n";
+    TransactionNode* current = electronicsHead;
+    while (current != nullptr && count < 5) {
+        std::cout << current->data.product << " - $" << current->data.price << " (" << current->data.payment_method << ")\n";
+        current = current->next;
+        count++;
+    }
+    
+    // Clean up the electronics transactions list
+    current = electronicsHead;
+    while (current != nullptr) {
+        TransactionNode* temp = current;
+        current = current->next;
+        delete temp;
     }
 }
 
+// Helper function for sorting transactions by price
+TransactionNode* LinkedList::mergeSortTransactionsByPrice(TransactionNode* head) {
+    // Base case
+    if (head == nullptr || head->next == nullptr) {
+        return head;
+    }
+    
+    // Split the list into two halves
+    TransactionNode* middle = getMiddle(head);
+    TransactionNode* nextOfMiddle = middle->next;
+    middle->next = nullptr;
+    
+    // Recursively sort both lists
+    TransactionNode* left = mergeSortTransactionsByPrice(head);
+    TransactionNode* right = mergeSortTransactionsByPrice(nextOfMiddle);
+    
+    // Merge the sorted lists by price
+    TransactionNode* sortedList = sortedMergeByPrice(left, right);
+    return sortedList;
+}
+
+TransactionNode* LinkedList::sortedMergeByPrice(TransactionNode* a, TransactionNode* b) {
+    TransactionNode* result = nullptr;
+    
+    // Base cases
+    if (a == nullptr) return b;
+    if (b == nullptr) return a;
+    
+    // Pick smaller price value
+    if (a->data.price <= b->data.price) {
+        result = a;
+        result->next = sortedMergeByPrice(a->next, b);
+    } else {
+        result = b;
+        result->next = sortedMergeByPrice(a, b->next);
+    }
+    return result;
+}
+
+// Modified findFrequentWordsInOneStarReviews to use a linked list approach
 void LinkedList::findFrequentWordsInOneStarReviews(int sortChoice, long long& duration_ms) {
     auto start = std::chrono::high_resolution_clock::now();
     
-    std::vector<std::string> oneStarReviewTexts;
+    // Define a Word node structure for our frequency list
+    struct WordFreqNode {
+        std::string word;
+        int frequency;
+        WordFreqNode* next;
+        
+        WordFreqNode(const std::string& w, int f) : word(w), frequency(f), next(nullptr) {}
+    };
     
-    // Linear Search to find 1-star reviews (this part stays the same regardless of sort choice)
+    // Process the review texts to find frequent words
+    std::map<std::string, int> wordFrequency;
+    int oneStarReviewCount = 0;
+    
+    // Linear Search to find 1-star reviews
     ReviewNode* current = reviewHead;
     while (current != nullptr) {
         if (current->data.rating == 1) {
-            oneStarReviewTexts.push_back(current->data.review_text);
+            oneStarReviewCount++;
+            std::istringstream iss(current->data.review_text);
+            std::string word;
+            while (iss >> word) {
+                // Convert to lowercase and remove punctuation
+                std::transform(word.begin(), word.end(), word.begin(), ::tolower);
+                word.erase(std::remove_if(word.begin(), word.end(), 
+                    [](char c) { return std::ispunct(c); }), word.end());
+                
+                if (word.length() > 2) { // Skip very short words
+                    wordFrequency[word]++;
+                }
+            }
         }
         current = current->next;
     }
     
-    // Process the review texts to find frequent words
-    std::map<std::string, int> wordFrequency;
-    for (const auto& text : oneStarReviewTexts) {
-        std::istringstream iss(text);
-        std::string word;
-        while (iss >> word) {
-            // Convert to lowercase and remove punctuation
-            std::transform(word.begin(), word.end(), word.begin(), ::tolower);
-            word.erase(std::remove_if(word.begin(), word.end(), 
-                [](char c) { return std::ispunct(c); }), word.end());
-            
-            if (word.length() > 2) { // Skip very short words
-                wordFrequency[word]++;
-            }
-        }
+    // Create a linked list of word frequencies
+    WordFreqNode* wordFreqHead = nullptr;
+    for (const auto& pair : wordFrequency) {
+        WordFreqNode* newNode = new WordFreqNode(pair.first, pair.second);
+        newNode->next = wordFreqHead;
+        wordFreqHead = newNode;
     }
-    
-    // Convert to vector for sorting
-    std::vector<std::pair<std::string, int>> wordFreqVec(wordFrequency.begin(), wordFrequency.end());
     
     // Apply different sorting algorithms based on user choice
     if (sortChoice == 1) {
         // Bubble Sort
-        for (size_t i = 0; i < wordFreqVec.size(); i++) {
-            for (size_t j = 0; j < wordFreqVec.size() - i - 1; j++) {
-                if (wordFreqVec[j].second < wordFreqVec[j + 1].second) {
-                    std::swap(wordFreqVec[j], wordFreqVec[j + 1]);
+        if (wordFreqHead != nullptr && wordFreqHead->next != nullptr) {
+            bool swapped;
+            WordFreqNode *ptr1;
+            WordFreqNode *lptr = nullptr;
+            
+            do {
+                swapped = false;
+                ptr1 = wordFreqHead;
+                
+                while (ptr1->next != lptr) {
+                    if (ptr1->frequency < ptr1->next->frequency) {
+                        // Swap data
+                        std::string tempWord = ptr1->word;
+                        int tempFreq = ptr1->frequency;
+                        
+                        ptr1->word = ptr1->next->word;
+                        ptr1->frequency = ptr1->next->frequency;
+                        
+                        ptr1->next->word = tempWord;
+                        ptr1->next->frequency = tempFreq;
+                        
+                        swapped = true;
+                    }
+                    ptr1 = ptr1->next;
                 }
-            }
+                lptr = ptr1;
+            } while (swapped);
         }
     } else if (sortChoice == 2) {
         // Insertion Sort
-        for (size_t i = 1; i < wordFreqVec.size(); i++) {
-            auto key = wordFreqVec[i];
-            int j = i - 1;
-            while (j >= 0 && wordFreqVec[j].second < key.second) {
-                wordFreqVec[j + 1] = wordFreqVec[j];
-                j--;
+        if (wordFreqHead != nullptr && wordFreqHead->next != nullptr) {
+            WordFreqNode* sorted = nullptr;
+            WordFreqNode* current = wordFreqHead;
+            
+            while (current != nullptr) {
+                WordFreqNode* next = current->next;
+                
+                if (sorted == nullptr || sorted->frequency <= current->frequency) {
+                    current->next = sorted;
+                    sorted = current;
+                } else {
+                    WordFreqNode* search = sorted;
+                    while (search->next != nullptr && search->next->frequency > current->frequency) {
+                        search = search->next;
+                    }
+                    current->next = search->next;
+                    search->next = current;
+                }
+                
+                current = next;
             }
-            wordFreqVec[j + 1] = key;
+            
+            wordFreqHead = sorted;
         }
     } else if (sortChoice == 3) {
         // Selection Sort
-        for (size_t i = 0; i < wordFreqVec.size(); i++) {
-            size_t max_idx = i;
-            for (size_t j = i + 1; j < wordFreqVec.size(); j++) {
-                if (wordFreqVec[j].second > wordFreqVec[max_idx].second) {
-                    max_idx = j;
+        if (wordFreqHead != nullptr && wordFreqHead->next != nullptr) {
+            WordFreqNode* current = wordFreqHead;
+            
+            while (current != nullptr) {
+                WordFreqNode* max = current;
+                WordFreqNode* r = current->next;
+                
+                while (r != nullptr) {
+                    if (r->frequency > max->frequency) {
+                        max = r;
+                    }
+                    r = r->next;
                 }
+                
+                if (max != current) {
+                    // Swap data
+                    std::string tempWord = current->word;
+                    int tempFreq = current->frequency;
+                    
+                    current->word = max->word;
+                    current->frequency = max->frequency;
+                    
+                    max->word = tempWord;
+                    max->frequency = tempFreq;
+                }
+                
+                current = current->next;
             }
-            std::swap(wordFreqVec[i], wordFreqVec[max_idx]);
         }
     } else if (sortChoice == 4) {
-        // Quick Sort (using std::sort)
-        std::sort(wordFreqVec.begin(), wordFreqVec.end(), 
-            [](const auto& a, const auto& b) { return a.second > b.second; });
+        // We'll implement a merge sort for this case
+        wordFreqHead = mergeSortWordFreq(wordFreqHead);
     }
     
     auto end = std::chrono::high_resolution_clock::now();
     duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     
     std::cout << "\nAnalysis completed in " << duration_ms << " ms\n";
-    std::cout << "Number of 1-star reviews: " << oneStarReviewTexts.size() << "\n";
+    std::cout << "Number of 1-star reviews: " << oneStarReviewCount << "\n";
     std::cout << "Most frequent words in 1-star reviews:\n";
     
     int count = 0;
-    for (const auto& pair : wordFreqVec) {
-        if (count++ >= 10) break; // Show top 10
-        std::cout << pair.first << ": " << pair.second << " occurrences\n";
+    WordFreqNode* ptr = wordFreqHead;
+    while (ptr != nullptr && count < 10) {
+        std::cout << ptr->word << ": " << ptr->frequency << " occurrences\n";
+        ptr = ptr->next;
+        count++;
     }
+    
+    // Clean up the word frequency list
+    ptr = wordFreqHead;
+    while (ptr != nullptr) {
+        WordFreqNode* temp = ptr;
+        ptr = ptr->next;
+        delete temp;
+    }
+}
+
+// Helper function to get the middle node of a WordFreqNode list
+WordFreqNode* LinkedList::getMiddleWordFreq(WordFreqNode* head) {
+    if (head == nullptr) return head;
+    
+    WordFreqNode* slow = head;
+    WordFreqNode* fast = head->next;
+    
+    while (fast != nullptr) {
+        fast = fast->next;
+        if (fast != nullptr) {
+            slow = slow->next;
+            fast = fast->next;
+        }
+    }
+    return slow;
+}
+
+// Helper function to merge two sorted WordFreqNode lists
+WordFreqNode* LinkedList::sortedMergeWordFreq(WordFreqNode* a, WordFreqNode* b) {
+    WordFreqNode* result = nullptr;
+    
+    // Base cases
+    if (a == nullptr) return b;
+    if (b == nullptr) return a;
+    
+    // Pick larger frequency value (for descending order)
+    if (a->frequency >= b->frequency) {
+        result = a;
+        result->next = sortedMergeWordFreq(a->next, b);
+    } else {
+        result = b;
+        result->next = sortedMergeWordFreq(a, b->next);
+    }
+    return result;
+}
+
+// Helper function to perform merge sort on WordFreqNode list
+WordFreqNode* LinkedList::mergeSortWordFreq(WordFreqNode* head) {
+    // Base case
+    if (head == nullptr || head->next == nullptr) {
+        return head;
+    }
+    
+    // Split the list into two halves
+    WordFreqNode* middle = getMiddleWordFreq(head);
+    WordFreqNode* nextOfMiddle = middle->next;
+    middle->next = nullptr;
+    
+    // Recursively sort both lists
+    WordFreqNode* left = mergeSortWordFreq(head);
+    WordFreqNode* right = mergeSortWordFreq(nextOfMiddle);
+    
+    // Merge the sorted lists
+    WordFreqNode* sortedList = sortedMergeWordFreq(left, right);
+    return sortedList;
 }
 
 // Load transactions from CSV
