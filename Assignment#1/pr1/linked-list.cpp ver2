@@ -771,4 +771,72 @@ int main() {
     loadReviews(list, "reviews_cleaned.csv");
 
     while (true) {
-        std::cout << "\nE-commerce Transaction Analysis System
+        std::cout << "\nE-commerce Transaction Analysis System (Linked List Implementation)\n";
+        std::cout << "=================================================================\n";
+        std::cout << "Choose a question to analyze:\n";
+        std::cout << "1. Sort transactions by date and display counts\n";
+        std::cout << "2. Calculate Electronics purchases with Credit Card percentage\n";
+        std::cout << "3. Find frequent words in 1-star reviews\n";
+        std::cout << "4. Exit\n";
+        std::cout << "Enter choice (1-4): ";
+
+        int question_choice;
+        std::cin >> question_choice;
+
+        if (question_choice == 4) {
+            std::cout << "Exiting program.\n";
+            break;
+        }
+
+        if (question_choice < 1 || question_choice > 3) {
+            std::cout << "Invalid choice. Please select 1, 2, 3, or 4.\n";
+            continue;
+        }
+
+        long long duration_ms = 0;
+
+        if (question_choice == 1) {
+            std::cout << "\nChoose Sorting Algorithm:\n";
+            std::cout << "1. Bubble Sort\n";
+            std::cout << "2. Insertion Sort\n";
+            std::cout << "3. Selection Sort\n";
+            std::cout << "4. Merge Sort\n";
+            std::cout << "Enter choice (1-4): ";
+            int sort_choice;
+            std::cin >> sort_choice;
+            list.sortTransactionsByDate(sort_choice, duration_ms);
+        } else if (question_choice == 2) {
+            std::cout << "\nChoose Search Algorithm:\n";
+            std::cout << "1. Linear Search\n";
+            std::cout << "2. Binary Search (Note: Using Linear Search for Linked List)\n";
+            std::cout << "3. Jump Search (Note: Using Linear Search for Linked List)\n";
+            std::cout << "4. Interpolation Search (Note: Using Linear Search for Linked List)\n";
+            std::cout << "Enter choice (1-4): ";
+            int search_choice;
+            std::cin >> search_choice;
+            
+            std::cout << "\nChoose Sorting Algorithm:\n";
+            std::cout << "1. Bubble Sort\n";
+            std::cout << "2. Insertion Sort\n";
+            std::cout << "3. Selection Sort\n";
+            std::cout << "4. Quick Sort\n";
+            std::cout << "Enter choice (1-4): ";
+            int sort_choice;
+            std::cin >> sort_choice;
+            
+            list.calculateElectronicsCreditCardPercentage(search_choice, sort_choice, duration_ms);
+        } else if (question_choice == 3) {
+            std::cout << "\nChoose Sorting Algorithm:\n";
+            std::cout << "1. Bubble Sort\n";
+            std::cout << "2. Insertion Sort\n";
+            std::cout << "3. Selection Sort\n";
+            std::cout << "4. Quick Sort\n";
+            std::cout << "Enter choice (1-4): ";
+            int sort_choice;
+            std::cin >> sort_choice;
+            list.findFrequentWordsInOneStarReviews(sort_choice, duration_ms);
+        }
+    }
+
+    return 0;
+}
