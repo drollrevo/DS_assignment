@@ -1,28 +1,34 @@
 #include <iostream>
 #include <string>
 #include "spectator_queue.hpp"
+#include "match_scheduler.hpp"
 
 /*
 # To build and run your project manually, use the following command from the project root:
 #
-# g++ -std=c++11 -Iinclude src/main.cpp src/spectator_queue.cpp -o apuec_spectator
+# g++ -std=c++11 -Iinclude src/main.cpp src/spectator_queue.cpp src/match_scheduler.cpp -o apuec_system
 #
 # Then run:
-# ./apuec_spectator
-#
-# The Makefile is no longer needed and can be deleted.
+# ./apuec_system
 */
 
 int main() {
     SpectatorQueue spectatorQueue;
+    MatchScheduler matchScheduler;
+    
+    // Load data
     spectatorQueue.loadViewers("data/viewers.csv");
     spectatorQueue.loadSlots("data/stream_slots.csv");
+    
+    matchScheduler.loadTeams("data/teams.csv");
+    matchScheduler.loadPlayers("data/players.csv");
+    matchScheduler.loadResults("data/results.csv");
 
     bool running = true;
     while (running) {
         std::cout << "\n=== APUEC System Menu ===\n";
         std::cout << "1) Registration (Task 2 - stub)\n";
-        std::cout << "2) Scheduling (Task 1 - stub)\n";
+        std::cout << "2) Match Scheduling (Task 1)\n";
         std::cout << "3) Logging Results (Task 4 - stub)\n";
         std::cout << "4) Admit Next Spectator (Task 3)\n";
         std::cout << "5) View Queue Size\n";
@@ -35,9 +41,67 @@ int main() {
             case 1:
                 std::cout << "[Stub] Registration module not implemented.\n";
                 break;
-            case 2:
-                std::cout << "[Stub] Scheduling module not implemented.\n";
+            case 2: {
+                // Task 1 - Match Scheduling submenu
+                bool schedulingActive = true;
+                while (schedulingActive) {
+                    std::cout << "\n=== Match Scheduling Menu ===\n";
+                    std::cout << "1) Generate Match Pairings\n";
+                    std::cout << "2) Get Next Match\n";
+                    std::cout << "3) Record Match Result\n";
+                    std::cout << "4) Display Tournament Bracket\n";
+                    std::cout << "5) Display Match Schedule\n";
+                    std::cout << "6) Display Player Statistics\n";
+                    std::cout << "7) Back to Main Menu\n";
+                    std::cout << "Select option: ";
+                    
+                    int schedChoice;
+                    std::cin >> schedChoice;
+                    
+                    switch (schedChoice) {
+                        case 1: {
+                            std::cout << "Enter stage (qualifier/group/knockout): ";
+                            std::string stage;
+                            std::cin >> stage;
+                            matchScheduler.generateMatchPairings(stage);
+                            break;
+                        }
+                        case 2: {
+                            matchScheduler.getNextMatch();
+                            break;
+                        }
+                        case 3: {
+                            std::cout << "Enter Match ID: ";
+                            std::string matchID;
+                            std::cin >> matchID;
+                            std::cout << "Enter Winner Team ID: ";
+                            std::string winner;
+                            std::cin >> winner;
+                            matchScheduler.recordMatchResult(matchID, winner);
+                            break;
+                        }
+                        case 4: {
+                            matchScheduler.displayTournamentBracket();
+                            break;
+                        }
+                        case 5: {
+                            matchScheduler.displayMatchSchedule();
+                            break;
+                        }
+                        case 6: {
+                            matchScheduler.displayPlayerStats();
+                            break;
+                        }
+                        case 7: {
+                            schedulingActive = false;
+                            break;
+                        }
+                        default:
+                            std::cout << "Invalid choice.\n";
+                    }
+                }
                 break;
+            }
             case 3:
                 std::cout << "[Stub] Result logging module not implemented.\n";
                 break;
@@ -52,7 +116,6 @@ int main() {
                                   << " (Priority " 
                                   << next->priority 
                                   << ")\n";
-                        // Free the admitted viewer's memory
                         delete next;
                     }
                 }
@@ -62,10 +125,14 @@ int main() {
                 std::cout << "Currently " 
                           << spectatorQueue.size() 
                           << " spectators in queue.\n";
+                std::cout << "Currently "
+                          << matchScheduler.size()
+                          << " matches scheduled.\n";
                 break;
             case 6:
-                std::cout << "Ending tournament. Clearing queue...\n";
+                std::cout << "Ending tournament. Clearing queues...\n";
                 spectatorQueue.clearAll();
+                matchScheduler.clearAll();
                 running = false;
                 break;
             default:
