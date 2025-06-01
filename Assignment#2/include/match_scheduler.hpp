@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
 
-// Player structure for match scheduling
 struct Player {
     std::string playerID;
     std::string playerName;
@@ -9,14 +8,14 @@ struct Player {
     int rank;
     int wins;
     int losses;
+    int totalScore; // Added to track total score
     std::string currentStage; // "qualifier", "group", "knockout", "eliminated"
     bool isActive;
     int arrivalOrder;
     
-    Player() : rank(0), wins(0), losses(0), currentStage("qualifier"), isActive(true), arrivalOrder(0) {}
+    Player() : rank(0), wins(0), losses(0), totalScore(0), currentStage("qualifier"), isActive(true), arrivalOrder(0) {}
 };
 
-// Match structure
 struct Match {
     std::string matchID;
     std::string teamA;
@@ -26,16 +25,9 @@ struct Match {
     std::string winner;
     std::string timestamp;
     std::string status; // "scheduled", "ongoing", "completed"
+    std::string round; // Added to track the match round
     
-    Match() : scoreA(0), scoreB(0), status("scheduled") {}
-};
-
-// Node for player priority queue (min-heap based on rank)
-struct PlayerNode {
-    Player* player;
-    PlayerNode* next;
-    
-    PlayerNode(Player* p) : player(p), next(nullptr) {}
+    Match() : scoreA(0), scoreB(0), status("scheduled"), round("") {}
 };
 
 // Node for match queue
@@ -58,8 +50,10 @@ private:
     
     Player* allPlayers;     // Array to store all players
     Match* completedMatches; // Array to store completed matches
-    int maxPlayers;
     int completedCount;
+    int maxPlayers;
+    int teamsRemaining;
+    std::string currentRound;
     
     // Heap operations
     void siftUp(int idx);
@@ -69,6 +63,11 @@ private:
     
     // Helper functions
     void parseLine(const std::string& line, std::string* fields, int expectedFields);
+    void generateCurrentRoundMatches();
+    void saveMatchResult(const std::string& matchID, const std::string& winner, int scoreA, int scoreB);
+    std::string getTeamName(const std::string& teamID);
+    void sortTeamsByRank();
+    void clearMatchQueue();
     
 public:
     MatchScheduler();
