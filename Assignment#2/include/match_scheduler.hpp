@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "task4.hpp" // For PerformanceHistoryManager
 
 struct Player {
     std::string playerID;
@@ -8,29 +9,28 @@ struct Player {
     int rank;
     int wins;
     int losses;
-    int totalScore; // Added to track total score
-    std::string currentStage; // "qualifier", "group", "knockout", "eliminated"
+    int totalScore;
+    std::string currentStage;
     bool isActive;
     int arrivalOrder;
     
-    Player() : rank(0), wins(0), losses(0), totalScore(0), currentStage("qualifier"), isActive(true), arrivalOrder(0) {}
+    Player() : rank(0), wins(0), losses(0), totalScore(0), currentStage("active"), isActive(true), arrivalOrder(0) {}
 };
 
 struct Match {
     std::string matchID;
-    std::string teamA;
-    std::string teamB;
+    std::string playerA;
+    std::string playerB;
     int scoreA;
     int scoreB;
     std::string winner;
     std::string timestamp;
-    std::string status; // "scheduled", "ongoing", "completed"
-    std::string round; // Added to track the match round
+    std::string status;
+    std::string round;
     
     Match() : scoreA(0), scoreB(0), status("scheduled"), round("") {}
 };
 
-// Node for match queue
 struct MatchNode {
     Match* match;
     MatchNode* next;
@@ -40,56 +40,41 @@ struct MatchNode {
 
 class MatchScheduler {
 private:
-    Player** playerHeap;    // Dynamic array for player heap
+    Player** playerHeap;
     int heapSize;
     int heapCapacity;
     int playerCount;
-    
     MatchNode* matchQueueHead;
     MatchNode* matchQueueTail;
-    
-    Player* allPlayers;     // Array to store all players
-    Match* completedMatches; // Array to store completed matches
+    Player* allPlayers;
+    Match* completedMatches;
     int completedCount;
     int maxPlayers;
-    int teamsRemaining;
     std::string currentRound;
-    
-    // Heap operations
+    PerformanceHistoryManager* perfManager;
+
     void siftUp(int idx);
     void siftDown(int idx);
     void resizeHeap();
     int comparePlayer(Player* a, Player* b);
-    
-    // Helper functions
     void parseLine(const std::string& line, std::string* fields, int expectedFields);
     void generateCurrentRoundMatches();
     void saveMatchResult(const std::string& matchID, const std::string& winner, int scoreA, int scoreB);
-    std::string getTeamName(const std::string& teamID);
-    void sortTeamsByRank();
+    std::string getPlayerName(const std::string& playerID);
+    void sortPlayersByRank();
     void clearMatchQueue();
-    
+
 public:
-    MatchScheduler();
+    MatchScheduler(PerformanceHistoryManager* perfManager);
     ~MatchScheduler();
-    
-    // Load data from CSV files
-    void loadTeams(const std::string& filename);
     void loadPlayers(const std::string& filename);
     void loadResults(const std::string& filename);
-    
-    // Core functionality
     void generateMatchPairings(const std::string& stage);
     Match* getNextMatch();
     void recordMatchResult(const std::string& matchID, const std::string& winner);
-    void updatePlayerStats();
-    
-    // Display functions
     void displayTournamentBracket();
     void displayMatchSchedule();
     void displayPlayerStats();
-    
-    // Queue management
     bool isEmpty() const;
     int size() const;
     void clearAll();

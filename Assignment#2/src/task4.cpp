@@ -4,44 +4,32 @@
 #include <fstream>
 #include <algorithm>
 #include <sstream>
-#include <cstring> // Add this for C string functions
+#include <cstring>
 
-// Replace the splitCSVLine function with this improved version
 char** splitCSVLine(const std::string& line, int& size) {
-    // First count the number of commas
     size = 1;
     for(size_t i = 0; i < line.length(); i++) {
         if(line[i] == ',') size++;
     }
     
-    // Allocate array of char pointers
     char** result = new char*[size];
-    
-    // Copy line to modifiable buffer
     char* buffer = new char[line.length() + 1];
     strcpy(buffer, line.c_str());
     
-    // Split by commas
     int index = 0;
     char* token = strtok(buffer, ",");
     while(token != nullptr && index < size) {
-        // Trim leading whitespace
         while(*token == ' ' || *token == '\t' || *token == '\r' || *token == '\n') 
             token++;
-            
-        // Trim trailing whitespace
         int len = strlen(token);
         while(len > 0 && (token[len-1] == ' ' || token[len-1] == '\t' || 
               token[len-1] == '\r' || token[len-1] == '\n')) {
             token[len-1] = '\0';
             len--;
         }
-        
-        // Allocate and copy trimmed token
         result[index] = new char[len + 1];
         strcpy(result[index], token);
         index++;
-        
         token = strtok(nullptr, ",");
     }
     
@@ -49,7 +37,6 @@ char** splitCSVLine(const std::string& line, int& size) {
     return result;
 }
 
-// Helper function to clean up splitCSVLine allocated memory
 void cleanupCSVArray(char** array, int size) {
     for(int i = 0; i < size; i++) {
         delete[] array[i];
@@ -57,7 +44,6 @@ void cleanupCSVArray(char** array, int size) {
     delete[] array;
 }
 
-// Modify CSV loading functions to use new splitCSVLine
 void PerformanceHistoryManager::loadMatchResultsFromCSV(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -78,7 +64,7 @@ void PerformanceHistoryManager::loadMatchResultsFromCSV(const std::string& filen
         int fieldCount;
         char** fields = splitCSVLine(line, fieldCount);
         
-        if (fieldCount >= 8) { // Minimum required fields
+        if (fieldCount >= 8) {
             try {
                 int matchId = std::stoi(fields[0]);
                 std::string player1 = fields[1];
@@ -146,18 +132,13 @@ void PerformanceHistoryManager::loadPlayersFromCSV(const std::string& filename) 
     std::cout << "Successfully loaded " << loadedPlayers << " players from " << filename << std::endl;
 }
 
-// ==================== Utility Functions ====================
-
 bool isValidDate(const std::string& date) {
-    // Simple date validation (assumes format: YYYY-MM-DD or DD/MM/YYYY)
     return !date.empty() && date.length() >= 8;
 }
 
 std::string getCurrentDate() {
-    return "2024-12-01"; // Placeholder - in real implementation, use system date
+    return "2024-12-01";
 }
-
-// ==================== MatchResult Implementation ====================
 
 MatchResult::MatchResult() {
     matchId = 0;
@@ -189,17 +170,15 @@ MatchResult::MatchResult(int id, const std::string& p1, const std::string& p2,
 }
 
 void MatchResult::displayMatch() const {
-    std::cout << "=== Match #" << matchId << " ===" << std::endl;
-    std::cout << "Players: " << player1 << " vs " << player2 << std::endl;
-    std::cout << "Score: " << player1Score << " - " << player2Score << std::endl;
-    std::cout << "Winner: " << winner << std::endl;
-    std::cout << "Game Mode: " << gameMode << std::endl;
-    std::cout << "Date: " << matchDate << std::endl;
-    std::cout << "Duration: " << durationMinutes << " minutes" << std::endl;
-    std::cout << "================================" << std::endl;
+    std::cout << "=== Match #" << matchId << " ===\n";
+    std::cout << "Players: " << player1 << " vs " << player2 << "\n";
+    std::cout << "Score: " << player1Score << " - " << player2Score << "\n";
+    std::cout << "Winner: " << winner << "\n";
+    std::cout << "Game Mode: " << gameMode << "\n";
+    std::cout << "Date: " << matchDate << "\n";
+    std::cout << "Duration: " << durationMinutes << " minutes\n";
+    std::cout << "================================\n";
 }
-
-// ==================== PlayerStats Implementation ====================
 
 PlayerStats::PlayerStats() {
     playerName = "";
@@ -252,19 +231,17 @@ void PlayerStats::calculateAverageScore() {
 }
 
 void PlayerStats::displayStats() const {
-    std::cout << "=== Player Statistics ===" << std::endl;
-    std::cout << "Player: " << playerName << std::endl;
-    std::cout << "Total Matches: " << totalMatches << std::endl;
-    std::cout << "Wins: " << wins << std::endl;
-    std::cout << "Losses: " << losses << std::endl;
-    std::cout << "Total Score: " << totalScore << std::endl;
+    std::cout << "=== Player Statistics ===\n";
+    std::cout << "Player: " << playerName << "\n";
+    std::cout << "Total Matches: " << totalMatches << "\n";
+    std::cout << "Wins: " << wins << "\n";
+    std::cout << "Losses: " << losses << "\n";
+    std::cout << "Total Score: " << totalScore << "\n";
     std::cout << std::fixed << std::setprecision(2);
-    std::cout << "Win Rate: " << winRate << "%" << std::endl;
-    std::cout << "Average Score: " << averageScore << std::endl;
-    std::cout << "=========================" << std::endl;
+    std::cout << "Win Rate: " << winRate << "%\n";
+    std::cout << "Average Score: " << averageScore << "\n";
+    std::cout << "=========================\n";
 }
-
-// ==================== RecentMatchesQueue Implementation ====================
 
 RecentMatchesQueue::RecentMatchesQueue(int size) {
     capacity = size;
@@ -288,8 +265,7 @@ bool RecentMatchesQueue::isFull() const {
 
 void RecentMatchesQueue::addMatch(const MatchResult& match) {
     if (isFull()) {
-        // Circular queue behavior - overwrite oldest match
-        std::cout << "Queue full! Overwriting oldest match result." << std::endl;
+        std::cout << "Queue full! Overwriting oldest match result.\n";
         front = (front + 1) % capacity;
         count--;
     }
@@ -298,12 +274,12 @@ void RecentMatchesQueue::addMatch(const MatchResult& match) {
     matches[rear] = match;
     count++;
     
-    std::cout << "Match #" << match.matchId << " recorded successfully!" << std::endl;
+    std::cout << "Match #" << match.matchId << " recorded successfully!\n";
 }
 
 MatchResult RecentMatchesQueue::removeOldestMatch() {
     if (isEmpty()) {
-        std::cout << "No matches to remove - queue is empty!" << std::endl;
+        std::cout << "No matches to remove - queue is empty!\n";
         return MatchResult();
     }
     
@@ -316,7 +292,7 @@ MatchResult RecentMatchesQueue::removeOldestMatch() {
 
 MatchResult RecentMatchesQueue::getMostRecentMatch() const {
     if (isEmpty()) {
-        std::cout << "No recent matches available!" << std::endl;
+        std::cout << "No recent matches available!\n";
         return MatchResult();
     }
     
@@ -325,20 +301,20 @@ MatchResult RecentMatchesQueue::getMostRecentMatch() const {
 
 void RecentMatchesQueue::displayRecentMatches() const {
     if (isEmpty()) {
-        std::cout << "No recent matches to display!" << std::endl;
+        std::cout << "No recent matches to display!\n";
         return;
     }
     
-    std::cout << "\n========== RECENT MATCHES ==========" << std::endl;
-    std::cout << "Displaying " << count << " recent matches:" << std::endl;
+    std::cout << "\n========== RECENT MATCHES ==========\n";
+    std::cout << "Displaying " << count << " recent matches:\n";
     
     int currentIndex = front;
     for (int i = 0; i < count; i++) {
-        std::cout << "\nMatch " << (i + 1) << ":" << std::endl;
+        std::cout << "\nMatch " << (i + 1) << ":\n";
         matches[currentIndex].displayMatch();
         currentIndex = (currentIndex + 1) % capacity;
     }
-    std::cout << "===================================" << std::endl;
+    std::cout << "===================================\n";
 }
 
 int RecentMatchesQueue::getCount() const {
@@ -347,11 +323,11 @@ int RecentMatchesQueue::getCount() const {
 
 void RecentMatchesQueue::searchMatchesByPlayer(const std::string& playerName) const {
     if (isEmpty()) {
-        std::cout << "No matches to search!" << std::endl;
+        std::cout << "No matches to search!\n";
         return;
     }
     
-    std::cout << "\n=== Matches involving " << playerName << " ===" << std::endl;
+    std::cout << "\n=== Matches involving " << playerName << " ===\n";
     bool found = false;
     
     int currentIndex = front;
@@ -365,17 +341,17 @@ void RecentMatchesQueue::searchMatchesByPlayer(const std::string& playerName) co
     }
     
     if (!found) {
-        std::cout << "No matches found for player: " << playerName << std::endl;
+        std::cout << "No matches found for player: " << playerName << "\n";
     }
 }
 
 void RecentMatchesQueue::getMatchesByGameMode(const std::string& gameMode) const {
     if (isEmpty()) {
-        std::cout << "No matches to search!" << std::endl;
+        std::cout << "No matches to search!\n";
         return;
     }
     
-    std::cout << "\n=== " << gameMode << " Matches ===" << std::endl;
+    std::cout << "\n=== " << gameMode << " Matches ===\n";
     bool found = false;
     
     int currentIndex = front;
@@ -388,17 +364,17 @@ void RecentMatchesQueue::getMatchesByGameMode(const std::string& gameMode) const
     }
     
     if (!found) {
-        std::cout << "No matches found for game mode: " << gameMode << std::endl;
+        std::cout << "No matches found for game mode: " << gameMode << "\n";
     }
 }
 
 void RecentMatchesQueue::getMatchesByDate(const std::string& date) const {
     if (isEmpty()) {
-        std::cout << "No matches to search!" << std::endl;
+        std::cout << "No matches to search!\n";
         return;
     }
     
-    std::cout << "\n=== Matches on " << date << " ===" << std::endl;
+    std::cout << "\n=== Matches on " << date << " ===\n";
     bool found = false;
     
     int currentIndex = front;
@@ -411,11 +387,9 @@ void RecentMatchesQueue::getMatchesByDate(const std::string& date) const {
     }
     
     if (!found) {
-        std::cout << "No matches found for date: " << date << std::endl;
+        std::cout << "No matches found for date: " << date << "\n";
     }
 }
-
-// ==================== PerformanceHistoryManager Implementation ====================
 
 PerformanceHistoryManager::PerformanceHistoryManager(int maxPlayers, int recentMatchesSize) {
     this->maxPlayers = maxPlayers;
@@ -435,15 +409,12 @@ int PerformanceHistoryManager::findPlayerIndex(const std::string& playerName) {
             return i;
         }
     }
-    return -1; // Player not found
+    return -1;
 }
 
 void PerformanceHistoryManager::recordMatchResult(const MatchResult& match) {
-    // Add match to recent matches queue
     recentMatches->addMatch(match);
     
-    // Update player statistics
-    // Check if players exist in database, if not add them
     int player1Index = findPlayerIndex(match.player1);
     if (player1Index == -1 && currentPlayerCount < maxPlayers) {
         playerDatabase[currentPlayerCount] = PlayerStats(match.player1);
@@ -458,7 +429,6 @@ void PerformanceHistoryManager::recordMatchResult(const MatchResult& match) {
         currentPlayerCount++;
     }
     
-    // Update statistics for both players
     if (player1Index != -1) {
         bool player1Won = (match.winner == match.player1);
         playerDatabase[player1Index].updateStats(player1Won, match.player1Score);
@@ -469,7 +439,7 @@ void PerformanceHistoryManager::recordMatchResult(const MatchResult& match) {
         playerDatabase[player2Index].updateStats(player2Won, match.player2Score);
     }
     
-    std::cout << "Player statistics updated successfully!" << std::endl;
+    std::cout << "Player statistics updated successfully!\n";
 }
 
 PlayerStats PerformanceHistoryManager::getPlayerStats(const std::string& playerName) {
@@ -477,23 +447,23 @@ PlayerStats PerformanceHistoryManager::getPlayerStats(const std::string& playerN
     if (index != -1) {
         return playerDatabase[index];
     } else {
-        std::cout << "Player not found: " << playerName << std::endl;
+        std::cout << "Player not found: " << playerName << "\n";
         return PlayerStats();
     }
 }
 
 void PerformanceHistoryManager::displayAllPlayerStats() const {
     if (currentPlayerCount == 0) {
-        std::cout << "No player statistics available!" << std::endl;
+        std::cout << "No player statistics available!\n";
         return;
     }
     
-    std::cout << "\n========== ALL PLAYER STATISTICS ==========" << std::endl;
+    std::cout << "\n========== ALL PLAYER STATISTICS ==========\n";
     for (int i = 0; i < currentPlayerCount; i++) {
         playerDatabase[i].displayStats();
-        std::cout << std::endl;
+        std::cout << "\n";
     }
-    std::cout << "===========================================" << std::endl;
+    std::cout << "===========================================\n";
 }
 
 void PerformanceHistoryManager::displayRecentMatches() const {
@@ -502,17 +472,15 @@ void PerformanceHistoryManager::displayRecentMatches() const {
 
 void PerformanceHistoryManager::getTopPlayersByWinRate(int topN) const {
     if (currentPlayerCount == 0) {
-        std::cout << "No players to rank!" << std::endl;
+        std::cout << "No players to rank!\n";
         return;
     }
     
-    // Create a copy of player database for sorting
     PlayerStats* sortedPlayers = new PlayerStats[currentPlayerCount];
     for (int i = 0; i < currentPlayerCount; i++) {
         sortedPlayers[i] = playerDatabase[i];
     }
     
-    // Simple bubble sort by win rate (descending)
     for (int i = 0; i < currentPlayerCount - 1; i++) {
         for (int j = 0; j < currentPlayerCount - i - 1; j++) {
             if (sortedPlayers[j].winRate < sortedPlayers[j + 1].winRate) {
@@ -523,13 +491,13 @@ void PerformanceHistoryManager::getTopPlayersByWinRate(int topN) const {
         }
     }
     
-    std::cout << "\n========== TOP " << topN << " PLAYERS BY WIN RATE ==========" << std::endl;
+    std::cout << "\n========== TOP " << topN << " PLAYERS BY WIN RATE ==========\n";
     int displayCount = (topN < currentPlayerCount) ? topN : currentPlayerCount;
     
     for (int i = 0; i < displayCount; i++) {
-        std::cout << "Rank " << (i + 1) << ":" << std::endl;
+        std::cout << "Rank " << (i + 1) << ":\n";
         sortedPlayers[i].displayStats();
-        std::cout << std::endl;
+        std::cout << "\n";
     }
     
     delete[] sortedPlayers;
@@ -537,17 +505,15 @@ void PerformanceHistoryManager::getTopPlayersByWinRate(int topN) const {
 
 void PerformanceHistoryManager::getTopPlayersByScore(int topN) const {
     if (currentPlayerCount == 0) {
-        std::cout << "No players to rank!" << std::endl;
+        std::cout << "No players to rank!\n";
         return;
     }
     
-    // Create a copy of player database for sorting
     PlayerStats* sortedPlayers = new PlayerStats[currentPlayerCount];
     for (int i = 0; i < currentPlayerCount; i++) {
         sortedPlayers[i] = playerDatabase[i];
     }
     
-    // Simple bubble sort by average score (descending)
     for (int i = 0; i < currentPlayerCount - 1; i++) {
         for (int j = 0; j < currentPlayerCount - i - 1; j++) {
             if (sortedPlayers[j].averageScore < sortedPlayers[j + 1].averageScore) {
@@ -558,13 +524,13 @@ void PerformanceHistoryManager::getTopPlayersByScore(int topN) const {
         }
     }
     
-    std::cout << "\n========== TOP " << topN << " PLAYERS BY AVERAGE SCORE ==========" << std::endl;
+    std::cout << "\n========== TOP " << topN << " PLAYERS BY AVERAGE SCORE ==========\n";
     int displayCount = (topN < currentPlayerCount) ? topN : currentPlayerCount;
     
     for (int i = 0; i < displayCount; i++) {
-        std::cout << "Rank " << (i + 1) << ":" << std::endl;
+        std::cout << "Rank " << (i + 1) << ":\n";
         sortedPlayers[i].displayStats();
-        std::cout << std::endl;
+        std::cout << "\n";
     }
     
     delete[] sortedPlayers;
@@ -575,20 +541,19 @@ void PerformanceHistoryManager::searchPlayerMatches(const std::string& playerNam
 }
 
 void PerformanceHistoryManager::generateTournamentSummary() const {
-    std::cout << "\n========== TOURNAMENT SUMMARY ==========" << std::endl;
-    std::cout << "Total Players: " << currentPlayerCount << std::endl;
-    std::cout << "Recent Matches Stored: " << recentMatches->getCount() << std::endl;
+    std::cout << "\n========== TOURNAMENT SUMMARY ==========\n";
+    std::cout << "Total Players: " << currentPlayerCount << "\n";
+    std::cout << "Recent Matches Stored: " << recentMatches->getCount() << "\n";
     
     if (currentPlayerCount > 0) {
         int totalMatches = 0;
         for (int i = 0; i < currentPlayerCount; i++) {
             totalMatches += playerDatabase[i].totalMatches;
         }
-        totalMatches /= 2; // Each match involves 2 players
+        totalMatches /= 2;
         
-        std::cout << "Total Matches Played: " << totalMatches << std::endl;
+        std::cout << "Total Matches Played: " << totalMatches << "\n";
         
-        // Find player with highest win rate
         int bestPlayerIndex = 0;
         for (int i = 1; i < currentPlayerCount; i++) {
             if (playerDatabase[i].winRate > playerDatabase[bestPlayerIndex].winRate) {
@@ -598,20 +563,19 @@ void PerformanceHistoryManager::generateTournamentSummary() const {
         
         std::cout << "Best Performing Player: " << playerDatabase[bestPlayerIndex].playerName 
                 << " (Win Rate: " << std::fixed << std::setprecision(2) 
-                << playerDatabase[bestPlayerIndex].winRate << "%)" << std::endl;
+                << playerDatabase[bestPlayerIndex].winRate << "%)\n";
     }
     std::cout << "========================================" << std::endl;
 }
 
 void PerformanceHistoryManager::generatePerformanceReport() const {
-    std::cout << "\n========== PERFORMANCE ANALYSIS REPORT ==========" << std::endl;
+    std::cout << "\n========== PERFORMANCE ANALYSIS REPORT ==========\n";
     
     if (currentPlayerCount == 0) {
-        std::cout << "No data available for analysis." << std::endl;
+        std::cout << "No data available for analysis.\n";
         return;
     }
     
-    // Calculate tournament statistics
     int totalGames = 0;
     int totalScores = 0;
     double totalWinRate = 0.0;
@@ -622,22 +586,22 @@ void PerformanceHistoryManager::generatePerformanceReport() const {
         totalWinRate += playerDatabase[i].winRate;
     }
     
-    std::cout << "Tournament Statistics:" << std::endl;
-    std::cout << "- Total Games Recorded: " << totalGames / 2 << std::endl;
+    std::cout << "Tournament Statistics:\n";
+    std::cout << "- Total Games Recorded: " << totalGames / 2 << "\n";
     std::cout << "- Average Score per Game: " << std::fixed << std::setprecision(2) 
-              << (double)totalScores / totalGames << std::endl;
-    std::cout << "- Average Win Rate: " << totalWinRate / currentPlayerCount << "%" << std::endl;
+              << (double)totalScores / totalGames << "\n";
+    std::cout << "- Average Win Rate: " << totalWinRate / currentPlayerCount << "%\n";
     
-    std::cout << "\nTop 3 Performers:" << std::endl;
+    std::cout << "\nTop 3 Performers:\n";
     getTopPlayersByWinRate(3);
     
-    std::cout << "=================================================" << std::endl;
+    std::cout << "=================================================\n";
 }
 
 void PerformanceHistoryManager::exportPlayerStatsToFile(const std::string& filename) const {
     std::ofstream file(filename);
     if (!file.is_open()) {
-        std::cout << "Error: Could not create file " << filename << std::endl;
+        std::cout << "Error: Could not create file " << filename << "\n";
         return;
     }
     
@@ -654,7 +618,7 @@ void PerformanceHistoryManager::exportPlayerStatsToFile(const std::string& filen
     }
     
     file.close();
-    std::cout << "Player statistics exported to " << filename << " successfully!" << std::endl;
+    std::cout << "Player statistics exported to " << filename << " successfully!\n";
 }
 
 int PerformanceHistoryManager::getTotalMatchesRecorded() const {
@@ -662,184 +626,44 @@ int PerformanceHistoryManager::getTotalMatchesRecorded() const {
 }
 
 void PerformanceHistoryManager::clearAllData() {
-    // Clear player database
     currentPlayerCount = 0;
-    
-    // Clear recent matches queue
     delete recentMatches;
     recentMatches = new RecentMatchesQueue(50);
-    
-    std::cout << "All tournament data cleared successfully!" << std::endl;
+    std::cout << "All tournament data cleared successfully!\n";
 }
 
 void PerformanceHistoryManager::getPlayerHeadToHead(const std::string& player1, const std::string& player2) const {
-    std::cout << "\n=== Head-to-Head: " << player1 << " vs " << player2 << " ===" << std::endl;
+    std::cout << "\n=== Head-to-Head: " << player1 << " vs " << player2 << " ===\n";
     
     if (recentMatches->isEmpty()) {
-        std::cout << "No matches to analyze!" << std::endl;
+        std::cout << "No matches to analyze!\n";
         return;
     }
     
-    int player1Wins = 0;
-    int player2Wins = 0;
-    int totalMeetings = 0;
-
-    std::cout << "Head-to-head analysis requires access to full match history." << std::endl;
-    std::cout << "Current implementation stores only recent matches in circular queue." << std::endl;
+    std::cout << "Head-to-head analysis requires access to full match history.\n";
+    std::cout << "Current implementation stores only recent matches in circular queue.\n";
 }
 
 void PerformanceHistoryManager::getGameModeStatistics() const {
-    std::cout << "\n=== Game Mode Statistics ===" << std::endl;
+    std::cout << "\n=== Game Mode Statistics ===\n";
     
     if (recentMatches->isEmpty()) {
-        std::cout << "No matches to analyze!" << std::endl;
+        std::cout << "No matches to analyze!\n";
         return;
     }
     
-    std::cout << "Game mode analysis available through recent matches:" << std::endl;
-    std::cout << "Use getMatchesByGameMode() for specific game mode filtering." << std::endl;
+    std::cout << "Game mode analysis available through recent matches:\n";
+    std::cout << "Use getMatchesByGameMode() for specific game mode filtering.\n";
 }
 
 void PerformanceHistoryManager::getMatchesByDateRange(const std::string& startDate, const std::string& endDate) const {
-    std::cout << "\n=== Matches from " << startDate << " to " << endDate << " ===" << std::endl;
+    std::cout << "\n=== Matches from " << startDate << " to " << endDate << " ===\n";
     
     if (recentMatches->isEmpty()) {
-        std::cout << "No matches to search!" << std::endl;
+        std::cout << "No matches to search!\n";
         return;
     }
     
-    std::cout << "Date range filtering available through recent matches." << std::endl;
-    std::cout << "Use getMatchesByDate() for specific date filtering." << std::endl;
-}
-
-// ==================== Menu and Main Functions ====================
-
-void displayMenu() {
-    std::cout << "\n========== APUEC GAME RESULT LOGGING & PERFORMANCE HISTORY ==========\n";
-    std::cout << "1.  Load Match Results from CSV\n";
-    std::cout << "2.  Load Players from CSV\n";
-    std::cout << "3.  Record New Match\n";
-    std::cout << "4.  Display All Player Statistics\n";
-    std::cout << "5.  Display Recent Matches\n";
-    std::cout << "6.  Search Player Matches\n";
-    std::cout << "7.  Get Top Players by Win Rate\n";
-    std::cout << "8.  Get Top Players by Average Score\n";
-    std::cout << "9.  Generate Tournament Summary\n";
-    std::cout << "10. Generate Performance Report\n";
-    std::cout << "11. Export Player Statistics to File\n";
-    std::cout << "12. Clear All Data\n";
-    std::cout << "0.  Exit\n";
-    std::cout << "Enter your choice: ";
-}
-
-void recordNewMatch(PerformanceHistoryManager& manager) {
-    int matchId, player1Score, player2Score, duration;
-    std::string player1, player2, gameMode, matchDate;
-    
-    std::cout << "\n=== Record New Match ===\n";
-    std::cout << "Enter Match ID: ";
-    std::cin >> matchId;
-    std::cin.ignore();
-    std::cout << "Enter Player 1 Name: ";
-    std::getline(std::cin, player1);
-    std::cout << "Enter Player 2 Name: ";
-    std::getline(std::cin, player2);
-    std::cout << "Enter Player 1 Score: ";
-    std::cin >> player1Score;
-    std::cout << "Enter Player 2 Score: ";
-    std::cin >> player2Score;
-    std::cin.ignore();
-    std::cout << "Enter Game Mode: ";
-    std::getline(std::cin, gameMode);
-    std::cout << "Enter Match Date (YYYY-MM-DD): ";
-    std::getline(std::cin, matchDate);
-    std::cout << "Enter Match Duration (minutes): ";
-    std::cin >> duration;
-    
-    std::string winner = (player1Score > player2Score) ? player1 : player2;
-    std::string loser = (player1Score > player2Score) ? player2 : player1;
-    
-    MatchResult match(matchId, player1, player2, winner, loser, player1Score, player2Score, gameMode, matchDate, duration);
-    manager.recordMatchResult(match);
-}
-
-int main() {
-    PerformanceHistoryManager manager(100, 50); // Max 100 players, store 50 recent matches
-    int choice;
-    std::string input;
-    
-    std::cout << "=== ASIA PACIFIC UNIVERSITY ESPORTS CHAMPIONSHIP ===\n";
-    std::cout << "===        GAME RESULT LOGGING SYSTEM             ===\n";
-    std::cout << "===              Task 4 - Demo                    ===\n\n";
-    
-    do {
-        displayMenu();
-        std::cin >> choice;
-        std::cin.ignore(); // Clear buffer
-        
-        switch (choice) {
-            case 1:
-                std::cout << "Enter CSV filename for match results: ";
-                std::getline(std::cin, input);
-                manager.loadMatchResultsFromCSV(input);
-                break;
-            case 2:
-                std::cout << "Enter CSV filename for players: ";
-                std::getline(std::cin, input);
-                manager.loadPlayersFromCSV(input);
-                break;
-            case 3:
-                recordNewMatch(manager);
-                break;
-            case 4:
-                manager.displayAllPlayerStats();
-                break;
-            case 5:
-                manager.displayRecentMatches();
-                break;
-            case 6:
-                std::cout << "Enter player name to search matches: ";
-                std::getline(std::cin, input);
-                manager.searchPlayerMatches(input);
-                break;
-            case 7:
-                std::cout << "Enter number of top players by win rate to display: ";
-                std::cin >> choice;
-                manager.getTopPlayersByWinRate(choice);
-                break;
-            case 8:
-                std::cout << "Enter number of top players by average score to display: ";
-                std::cin >> choice;
-                manager.getTopPlayersByScore(choice);
-                break;
-            case 9:
-                manager.generateTournamentSummary();
-                break;
-            case 10:
-                manager.generatePerformanceReport();
-                break;
-            case 11:
-                std::cout << "Enter filename to export player statistics: ";
-                std::getline(std::cin, input);
-                manager.exportPlayerStatsToFile(input);
-                break;
-            case 12:
-                manager.clearAllData();
-                break;
-            case 0:
-                std::cout << "Exiting...\n";
-                break;
-            default:
-                std::cout << "Invalid choice! Please try again.\n";
-                break;
-        }
-        
-        if (choice != 0) {
-            std::cout << "\nPress Enter to continue...";
-            std::cin.get();
-        }
-        
-    } while (choice != 0);
-    
-    return 0;
+    std::cout << "Date range filtering available through recent matches.\n";
+    std::cout << "Use getMatchesByDate() for specific date filtering.\n";
 }

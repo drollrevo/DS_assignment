@@ -5,23 +5,21 @@
 #include <cstring>
 #include <ctime>
 #include <algorithm>
-#include <iomanip> // Required for std::setw
+#include <iomanip>
 
 static const int INITIAL_CAPACITY = 64;
-static const int MAX_TEAMS = 32;
+static const int MAX_PLAYERS = 128;
 static const int MAX_MATCHES = 100;
 
-MatchScheduler::MatchScheduler() 
-    : heapSize(0), heapCapacity(INITIAL_CAPACITY), playerCount(0),
-      matchQueueHead(nullptr), matchQueueTail(nullptr), completedCount(0), maxPlayers(MAX_TEAMS) {
+MatchScheduler::MatchScheduler(PerformanceHistoryManager* perfManager) 
+    : perfManager(perfManager), heapSize(0), heapCapacity(INITIAL_CAPACITY), playerCount(0),
+      matchQueueHead(nullptr), matchQueueTail(nullptr), completedCount(0), maxPlayers(MAX_PLAYERS) {
     
     playerHeap = new Player*[heapCapacity];
     allPlayers = new Player[maxPlayers];
     completedMatches = new Match[MAX_MATCHES];
     
-    // Initialize tournament structure
-    currentRound = "Round of 16";
-    teamsRemaining = 16;
+    currentRound = "Round of 128";
 }
 
 MatchScheduler::~MatchScheduler() {
@@ -30,7 +28,6 @@ MatchScheduler::~MatchScheduler() {
     delete[] allPlayers;
     delete[] completedMatches;
     
-    // Clear match queue
     MatchNode* current = matchQueueHead;
     while (current) {
         MatchNode* temp = current->next;
@@ -40,59 +37,62 @@ MatchScheduler::~MatchScheduler() {
     }
 }
 
-void MatchScheduler::loadTeams(const std::string& filename) {
-    std::ifstream file("data/teams.csv");
+void MatchScheduler::loadPlayers(const std::string& filename) {
+    std::ifstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Failed to open " << filename << std::endl;
         return;
     }
     
     std::string line;
-    // Skip header
     if (!std::getline(file, line)) return;
     
     playerCount = 0;
-    while (std::getline(file, line) && playerCount < 16) { // Only load first 16 teams
+    while (std::getline(file, line) && playerCount < maxPlayers) {
         if (line.empty()) continue;
         
         std::string fields[3];
         parseLine(line, fields, 3);
         
-        Player* team = &allPlayers[playerCount];
-        team->playerID = fields[0];
-        team->playerName = fields[1];
-        team->teamID = fields[0]; // Same as playerID for teams
-        team->rank = std::stoi(fields[2]);
-        team->arrivalOrder = playerCount + 1;
-        team->currentStage = "active";
-        team->isActive = true;
-        team->wins = 0;
-        team->losses = 0;
-        team->totalScore = 0;
+        allPlayers[playerCount].playerID = fields[0];
+        allPlayers[playerCount].playerName = fields[1];
+        allPlayers[playerCount].teamID = fields[2];
+        allPlayers[playerCount].rank = playerCount + 1;
+        allPlayers[playerCount].arrivalOrder = playerCount + 1;
+        allPlayers[playerCount].currentStage = "active";
+        allPlayers[playerCount].isActive = true;
+        allPlayers[playerCount].wins = 0;
+        allPlayers[playerCount].losses = 0;
+        allPlayers[playerCount].totalScore = 0;
         
         playerCount++;
     }
     file.close();
-    std::cout << "Loaded " << playerCount << " teams for tournament.\n";
+    std::cout << "Loaded " << playerCount << " players for tournament.\n";
     
-    // Sort teams by rank for fair bracket seeding
-    sortTeamsByRank();
+    sortPlayersByRank();
 }
 
-void MatchScheduler::loadPlayers(const std::string& filename) {
-    // This function is now redundant since we work with teams
-    std::cout << "Working with teams instead of individual players.\n";
+void MatchScheduler::sortPlayersByRank() {
+    for (int i = 0; i < playerCount - 1; i++) {
+        for (int j = 0; j < playerCount - i - 1; j++) {
+            if (allPlayers[j].rank > allPlayers[j + 1].rank) {
+                Player temp = allPlayers[j];
+                allPlayers[j] = allPlayers[j + 1];
+                allPlayers[j + 1] = temp;
+            }
+        }
+    }
 }
 
 void MatchScheduler::loadResults(const std::string& filename) {
-    std::ifstream file("data/results.csv");
+    std::ifstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Failed to open " << filename << std::endl;
         return;
     }
     
     std::string line;
-    // Skip header
     if (!std::getline(file, line)) return;
     
     while (std::getline(file, line) && completedCount < MAX_MATCHES) {
@@ -103,8 +103,8 @@ void MatchScheduler::loadResults(const std::string& filename) {
         
         Match* m = &completedMatches[completedCount];
         m->matchID = fields[0];
-        m->teamA = fields[1];
-        m->teamB = fields[2];
+        m->playerA = fields[1];
+        m->playerB = fields[2];
         m->scoreA = std::stoi(fields[3]);
         m->scoreB = std::stoi(fields[4]);
         m->winner = fields[5];
@@ -119,75 +119,67 @@ void MatchScheduler::loadResults(const std::string& filename) {
 
 void MatchScheduler::generateMatchPairings(const std::string& stage) {
     std::cout << "\n=== Generating Tournament Bracket ===\n";
-    
-    // Clear existing matches
     clearMatchQueue();
-    
-    // Generate matches for current round
     generateCurrentRoundMatches();
 }
 
 void MatchScheduler::generateCurrentRoundMatches() {
-    // Count active teams
-    int activeTeams = 0;
+    int activePlayers = 0;
     for (int i = 0; i < playerCount; i++) {
         if (allPlayers[i].isActive) {
-            activeTeams++;
+            activePlayers++;
         }
     }
     
-    if (activeTeams < 2) {
+    if (activePlayers < 2) {
         std::cout << "Tournament complete! Champion found!\n";
         return;
     }
     
-    // Determine current round name
-    if (activeTeams == 16) currentRound = "Round of 16";
-    else if (activeTeams == 8) currentRound = "Quarter-finals";
-    else if (activeTeams == 4) currentRound = "Semi-finals";
-    else if (activeTeams == 2) currentRound = "Final";
+    if (activePlayers == 128) currentRound = "Round of 128";
+    else if (activePlayers == 64) currentRound = "Round of 64";
+    else if (activePlayers == 32) currentRound = "Round of 32";
+    else if (activePlayers == 16) currentRound = "Round of 16";
+    else if (activePlayers == 8) currentRound = "Quarter-finals";
+    else if (activePlayers == 4) currentRound = "Semi-finals";
+    else if (activePlayers == 2) currentRound = "Final";
     
     std::cout << "\n=== " << currentRound << " ===\n";
     
-    // Create matches by pairing active teams
     int matchCount = 0;
-    for (int i = 0; i < playerCount - 1; i++) {
-        if (allPlayers[i].isActive) {
-            // Find next active team
-            for (int j = i + 1; j < playerCount; j++) {
-                if (allPlayers[j].isActive) {
-                    // Create match
-                    Match* newMatch = new Match();
-                    newMatch->matchID = "M" + std::to_string(completedCount + matchCount + 1);
-                    newMatch->teamA = allPlayers[i].teamID;
-                    newMatch->teamB = allPlayers[j].teamID;
-                    newMatch->scoreA = 0;
-                    newMatch->scoreB = 0;
-                    newMatch->status = "scheduled";
-                    newMatch->round = currentRound;
-                    
-                    // Add to match queue
-                    MatchNode* node = new MatchNode(newMatch);
-                    if (!matchQueueHead) {
-                        matchQueueHead = matchQueueTail = node;
-                    } else {
-                        matchQueueTail->next = node;
-                        matchQueueTail = node;
-                    }
-                    
-                    std::cout << "Match " << newMatch->matchID << ": " 
-                              << allPlayers[i].playerName << " vs " 
-                              << allPlayers[j].playerName << "\n";
-                    
-                    // Mark both teams as paired for this round
-                    allPlayers[i].isActive = false; // Temporarily inactive until match result
-                    allPlayers[j].isActive = false;
-                    matchCount++;
-                    break;
-                }
+    int left = 0;
+    int right = playerCount - 1;
+    while (left < right) {
+        while (!allPlayers[left].isActive && left < right) left++;
+        while (!allPlayers[right].isActive && left < right) right--;
+        if (left < right) {
+            Match* newMatch = new Match();
+            newMatch->matchID = "M" + std::to_string(completedCount + matchCount + 1);
+            newMatch->playerA = allPlayers[left].playerID;
+            newMatch->playerB = allPlayers[right].playerID;
+            newMatch->scoreA = 0;
+            newMatch->scoreB = 0;
+            newMatch->status = "scheduled";
+            newMatch->round = currentRound;
+            
+            MatchNode* node = new MatchNode(newMatch);
+            if (!matchQueueHead) {
+                matchQueueHead = matchQueueTail = node;
+            } else {
+                matchQueueTail->next = node;
+                matchQueueTail = node;
             }
+            
+            std::cout << "Match " << newMatch->matchID << ": " 
+                      << allPlayers[left].playerName << " vs " 
+                      << allPlayers[right].playerName << "\n";
+            
+            allPlayers[left].isActive = false;
+            allPlayers[right].isActive = false;
+            matchCount++;
+            left++;
+            right--;
         }
-        if (matchCount >= activeTeams / 2) break;
     }
 }
 
@@ -204,76 +196,139 @@ Match* MatchScheduler::getNextMatch() {
     
     std::cout << "\n=== Next Match (" << nextMatch->round << ") ===\n";
     std::cout << "Match ID: " << nextMatch->matchID << "\n";
-    std::cout << "Team A: " << getTeamName(nextMatch->teamA) << "\n";
-    std::cout << "Team B: " << getTeamName(nextMatch->teamB) << "\n";
+    std::cout << "Player A: " << getPlayerName(nextMatch->playerA) << "\n";
+    std::cout << "Player B: " << getPlayerName(nextMatch->playerB) << "\n";
     
     delete temp;
     return nextMatch;
 }
 
 void MatchScheduler::recordMatchResult(const std::string& matchID, const std::string& winner) {
-    // Get scores from user
-    std::cout << "Enter score for Team A: ";
+    Match* match = nullptr;
+    MatchNode* current = matchQueueHead;
+    while (current) {
+        if (current->match->matchID == matchID) {
+            match = current->match;
+            break;
+        }
+        current = current->next;
+    }
+    if (!match) {
+        for (int i = 0; i < completedCount; i++) {
+            if (completedMatches[i].matchID == matchID) {
+                match = &completedMatches[i];
+                break;
+            }
+        }
+    }
+    if (!match) {
+        std::cout << "Match not found!\n";
+        return;
+    }
+    
+    std::cout << "Enter score for " << match->playerA << ": ";
     int scoreA;
     std::cin >> scoreA;
-    std::cout << "Enter score for Team B: ";
+    std::cout << "Enter score for " << match->playerB << ": ";
     int scoreB;
     std::cin >> scoreB;
     
-    // Create new result and save to file
-    saveMatchResult(matchID, winner, scoreA, scoreB);
+    if (winner.empty()) {
+        if (scoreA > scoreB) {
+            match->winner = match->playerA;
+        } else if (scoreB > scoreA) {
+            match->winner = match->playerB;
+        } else {
+            std::cout << "Tie not handled!\n";
+            return;
+        }
+    } else {
+        match->winner = winner;
+    }
     
-    // Update team stats
+    saveMatchResult(matchID, match->winner, scoreA, scoreB);
+    
     for (int i = 0; i < playerCount; i++) {
-        if (allPlayers[i].teamID == winner && !allPlayers[i].isActive) {
-            allPlayers[i].wins++;
-            allPlayers[i].totalScore += (allPlayers[i].teamID == winner) ? 
-                ((scoreA > scoreB) ? scoreA : scoreB) : 
-                ((scoreA > scoreB) ? scoreB : scoreA);
-            allPlayers[i].isActive = true; // Winner advances
-            std::cout << allPlayers[i].playerName << " advances to next round!\n";
-        } else if ((allPlayers[i].teamID != winner) && !allPlayers[i].isActive) {
-            // Check if this team was in the match
-            allPlayers[i].losses++;
-            allPlayers[i].isActive = false; // Loser is eliminated
-            std::cout << allPlayers[i].playerName << " is eliminated!\n";
+        if (allPlayers[i].playerID == match->playerA) {
+            if (allPlayers[i].playerID == match->winner) {
+                allPlayers[i].wins++;
+                allPlayers[i].totalScore += scoreA;
+                allPlayers[i].isActive = true;
+            } else {
+                allPlayers[i].losses++;
+                allPlayers[i].isActive = false;
+            }
+        } else if (allPlayers[i].playerID == match->playerB) {
+            if (allPlayers[i].playerID == match->winner) {
+                allPlayers[i].wins++;
+                allPlayers[i].totalScore += scoreB;
+                allPlayers[i].isActive = true;
+            } else {
+                allPlayers[i].losses++;
+                allPlayers[i].isActive = false;
+            }
         }
     }
+    
+    MatchResult matchResult;
+    matchResult.matchId = std::stoi(matchID.substr(1));
+    matchResult.player1 = match->playerA;
+    matchResult.player2 = match->playerB;
+    matchResult.winner = match->winner;
+    matchResult.loser = (match->winner == match->playerA) ? match->playerB : match->playerA;
+    matchResult.player1Score = scoreA;
+    matchResult.player2Score = scoreB;
+    matchResult.gameMode = "1v1";
+    matchResult.matchDate = "2025-06-15";
+    matchResult.durationMinutes = 30;
+
+    if (perfManager) {
+        perfManager->recordMatchResult(matchResult);
+    }
+    
+    std::cout << "Match result recorded.\n";
 }
 
 void MatchScheduler::saveMatchResult(const std::string& matchID, const std::string& winner, int scoreA, int scoreB) {
     std::ofstream file("data/tournament_results.csv", std::ios::app);
     
-    // Check if file is empty to write header
     std::ifstream checkFile("data/tournament_results.csv");
     bool isEmpty = checkFile.peek() == std::ifstream::traits_type::eof();
     checkFile.close();
     
     if (isEmpty) {
-        file << "MatchID,TeamA,TeamB,ScoreA,ScoreB,Winner,Timestamp,Round\n";
+        file << "MatchID,PlayerA,PlayerB,ScoreA,ScoreB,Winner,Timestamp,Round\n";
     }
     
-    // Get current timestamp
     time_t now = time(0);
     char* timeStr = ctime(&now);
     std::string timestamp(timeStr);
-    timestamp.pop_back(); // Remove newline
+    timestamp.pop_back();
     
-    // Find match details
-    std::string teamA, teamB;
-    for (int i = 0; i < playerCount; i++) {
-        if (!allPlayers[i].isActive || allPlayers[i].teamID == winner) {
-            if (teamA.empty()) teamA = allPlayers[i].teamID;
-            else if (teamB.empty() && allPlayers[i].teamID != teamA) {
-                teamB = allPlayers[i].teamID;
+    // Find the match to get playerA and playerB
+    Match* match = nullptr;
+    MatchNode* current = matchQueueHead;
+    while (current) {
+        if (current->match->matchID == matchID) {
+            match = current->match;
+            break;
+        }
+        current = current->next;
+    }
+    if (!match) {
+        for (int i = 0; i < completedCount; i++) {
+            if (completedMatches[i].matchID == matchID) {
+                match = &completedMatches[i];
                 break;
             }
         }
     }
     
-    file << matchID << "," << teamA << "," << teamB << "," 
-         << scoreA << "," << scoreB << "," << winner << "," 
-         << timestamp << "," << currentRound << "\n";
+    if (match) {
+        file << matchID << "," << match->playerA << "," << match->playerB << "," 
+             << scoreA << "," << scoreB << "," << winner << "," 
+             << timestamp << "," << currentRound << "\n";
+    }
     
     file.close();
     std::cout << "Match result saved to tournament_results.csv\n";
@@ -282,10 +337,9 @@ void MatchScheduler::saveMatchResult(const std::string& matchID, const std::stri
 void MatchScheduler::displayTournamentBracket() {
     std::cout << "\n=== TOURNAMENT BRACKET VISUALIZATION ===\n";
     
-    // Count teams in each stage
     int active = 0, eliminated = 0;
     
-    std::cout << "\n--- ACTIVE TEAMS ---\n";
+    std::cout << "\n--- ACTIVE PLAYERS ---\n";
     for (int i = 0; i < playerCount; i++) {
         if (allPlayers[i].isActive) {
             std::cout << "🏆 " << allPlayers[i].playerName 
@@ -296,7 +350,7 @@ void MatchScheduler::displayTournamentBracket() {
         }
     }
     
-    std::cout << "\n--- ELIMINATED TEAMS ---\n";
+    std::cout << "\n--- ELIMINATED PLAYERS ---\n";
     for (int i = 0; i < playerCount; i++) {
         if (!allPlayers[i].isActive && allPlayers[i].losses > 0) {
             std::cout << "❌ " << allPlayers[i].playerName 
@@ -308,12 +362,11 @@ void MatchScheduler::displayTournamentBracket() {
     }
     
     std::cout << "\nCurrent Round: " << currentRound << "\n";
-    std::cout << "Teams Remaining: " << active << "\n";
+    std::cout << "Players Remaining: " << active << "\n";
     
-    // Show tournament progression
     std::cout << "\n--- TOURNAMENT PROGRESSION ---\n";
-    std::cout << "Round of 16 → Quarter-finals → Semi-finals → Final → Champion\n";
-    std::cout << "     16    →        8        →      4      →   2   →    1\n";
+    std::cout << "Round of 128 → Round of 64 → Round of 32 → Round of 16 → Quarter-finals → Semi-finals → Final → Champion\n";
+    std::cout << "     128    →     64     →     32     →     16     →      8      →      4      →   2   →    1\n";
 }
 
 void MatchScheduler::displayMatchSchedule() {
@@ -327,68 +380,53 @@ void MatchScheduler::displayMatchSchedule() {
     
     while (current) {
         Match* m = current->match;
-        std::cout << m->matchID << ": " << getTeamName(m->teamA) 
-                  << " vs " << getTeamName(m->teamB) 
+        std::cout << m->matchID << ": " << getPlayerName(m->playerA) 
+                  << " vs " << getPlayerName(m->playerB) 
                   << " [" << m->status << "]\n";
         current = current->next;
     }
 }
 
 void MatchScheduler::displayPlayerStats() {
-    std::cout << "\n=== TEAM STATISTICS ===\n";
+    std::cout << "\n=== PLAYER STATISTICS ===\n";
     
-    // Sort teams by performance (wins, then total score)
-    Player* sortedTeams[32];
+    Player* sortedPlayers[128];
     for (int i = 0; i < playerCount; i++) {
-        sortedTeams[i] = &allPlayers[i];
+        sortedPlayers[i] = &allPlayers[i];
     }
     
-    // Simple bubble sort by wins (descending)
     for (int i = 0; i < playerCount - 1; i++) {
         for (int j = 0; j < playerCount - i - 1; j++) {
-            if (sortedTeams[j]->wins < sortedTeams[j + 1]->wins || 
-                (sortedTeams[j]->wins == sortedTeams[j + 1]->wins && 
-                 sortedTeams[j]->totalScore < sortedTeams[j + 1]->totalScore)) {
-                Player* temp = sortedTeams[j];
-                sortedTeams[j] = sortedTeams[j + 1];
-                sortedTeams[j + 1] = temp;
+            if (sortedPlayers[j]->wins < sortedPlayers[j + 1]->wins || 
+                (sortedPlayers[j]->wins == sortedPlayers[j + 1]->wins && 
+                 sortedPlayers[j]->totalScore < sortedPlayers[j + 1]->totalScore)) {
+                Player* temp = sortedPlayers[j];
+                sortedPlayers[j] = sortedPlayers[j + 1];
+                sortedPlayers[j + 1] = temp;
             }
         }
     }
     
-    std::cout << "Rank | Team Name               | W | L | Total Score | Status\n";
+    std::cout << "Rank | Player Name             | W | L | Total Score | Status\n";
     std::cout << "-----|-------------------------|---|---|-------------|--------\n";
     
     for (int i = 0; i < playerCount; i++) {
-        Player* team = sortedTeams[i];
+        Player* player = sortedPlayers[i];
         std::cout << std::setw(4) << (i + 1) << " | " 
-                  << std::setw(23) << team->playerName << " | "
-                  << team->wins << " | " << team->losses << " | "
-                  << std::setw(11) << team->totalScore << " | "
-                  << (team->isActive ? "Active" : "Eliminated") << "\n";
+                  << std::setw(23) << player->playerName << " | "
+                  << player->wins << " | " << player->losses << " | "
+                  << std::setw(11) << player->totalScore << " | "
+                  << (player->isActive ? "Active" : "Eliminated") << "\n";
     }
 }
 
-std::string MatchScheduler::getTeamName(const std::string& teamID) {
+std::string MatchScheduler::getPlayerName(const std::string& playerID) {
     for (int i = 0; i < playerCount; i++) {
-        if (allPlayers[i].teamID == teamID) {
+        if (allPlayers[i].playerID == playerID) {
             return allPlayers[i].playerName;
         }
     }
-    return teamID;
-}
-
-void MatchScheduler::sortTeamsByRank() {
-    // Sort teams by rank (ascending - better rank = lower number)
-    for (int i = 0; i < playerCount - 1; i++) {
-        for (int j = 0; j < playerCount - i - 1; j++) {
-            if (allPlayers[j].rank > allPlayers[j + 1].rank) {
-                Player temp = allPlayers[j];
-                allPlayers[j] = allPlayers[j + 1];
-                allPlayers[j + 1] = temp;
-            }
-        }
-    }
+    return playerID;
 }
 
 void MatchScheduler::clearMatchQueue() {
@@ -471,7 +509,6 @@ void MatchScheduler::resizeHeap() {
 }
 
 int MatchScheduler::comparePlayer(Player* a, Player* b) {
-    // Better rank = lower number, so lower rank gets higher priority
     if (a->rank < b->rank) return -1;
     if (a->rank > b->rank) return 1;
     if (a->arrivalOrder < b->arrivalOrder) return -1;
@@ -486,8 +523,4 @@ void MatchScheduler::parseLine(const std::string& line, std::string* fields, int
     while (std::getline(ss, item, ',') && idx < expectedFields) {
         fields[idx++] = item;
     }
-}
-
-void MatchScheduler::updatePlayerStats() {
-    std::cout << "Team stats updated based on match results.\n";
 }

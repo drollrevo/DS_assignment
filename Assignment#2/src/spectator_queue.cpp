@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 #include <cstring>
 
 static const int INITIAL_CAPACITY = 16;
@@ -10,13 +11,11 @@ SpectatorQueue::SpectatorQueue()
     : heapSize(0), heapCapacity(INITIAL_CAPACITY), arrivalCounter(0), slotsHead(nullptr), admitLog(nullptr)
 {
     heap = new Viewer*[heapCapacity];
-    // Open admission log in append mode (or create if it doesn't exist)
     admitLog = std::fopen("data/admitted_viewers.csv", "a");
     if (!admitLog) {
         std::perror("Error opening admitted_viewers.csv");
         std::exit(EXIT_FAILURE);
     }
-    // If the file is brand-new (size 0), write header
     std::fseek(admitLog, 0, SEEK_END);
     long pos = std::ftell(admitLog);
     if (pos == 0) {
@@ -28,7 +27,6 @@ SpectatorQueue::SpectatorQueue()
 SpectatorQueue::~SpectatorQueue() {
     clearAll();
     delete[] heap;
-    // Free the linked list of slots
     StreamSlot* cur = slotsHead;
     while (cur) {
         StreamSlot* tmp = cur->next;
@@ -45,7 +43,6 @@ void SpectatorQueue::loadViewers(const std::string& filename) {
         std::exit(EXIT_FAILURE);
     }
     std::string line;
-    // Skip header row
     if (!std::getline(file, line)) return;
 
     while (std::getline(file, line)) {
@@ -69,7 +66,6 @@ void SpectatorQueue::loadSlots(const std::string& filename) {
         std::exit(EXIT_FAILURE);
     }
     std::string line;
-    // Skip header row
     if (!std::getline(file, line)) return;
     StreamSlot* tail = nullptr;
 
@@ -96,6 +92,9 @@ void SpectatorQueue::loadSlots(const std::string& filename) {
 }
 
 void SpectatorQueue::enqueueViewer(Viewer* v) {
+    if (v->arrivalOrder == 0) {
+        v->arrivalOrder = ++arrivalCounter;
+    }
     if (heapSize == heapCapacity) {
         resizeHeap();
     }
@@ -111,13 +110,85 @@ Viewer* SpectatorQueue::dequeueViewer() {
     heap[0] = heap[heapSize];
     siftDown(0);
 
-    // Log admission (placeholder admit time & channel)
-    std::string admitTime = "2025-06-15T00:00";  // Replace with real timestamp if desired
+    std::string admitTime = "2025-06-15T00:00";
     std::fprintf(admitLog, "%s,%s,%d,%s,%s\n",
                  top->id.c_str(), top->name.c_str(), top->priority,
                  admitTime.c_str(), "ChannelX");
     std::fflush(admitLog);
     return top;
+}
+
+Viewer* SpectatorQueue::peekNext() const {
+    if (heapSize == 0) return nullptr;
+    return heap[0];
+}
+
+void SpectatorQueue::displayQueue() const {
+    if (heapSize == 0) {
+        std::cout << "No spectators are currently in the queue.\n";
+        return;
+    }
+    
+    Viewer** temp = new Viewer*[heapSize];
+    for (int i = 0; i < heapSize; i++) {
+        temp[i] = heap[i];
+    }
+    
+    // Bubble sort
+    for (int i = 0; i < heapSize - 1; i++) {
+        for (int j = 0; j < heapSize - i - 1; j++) {
+            if (compare(temp[j + 1], temp[j]) > 0) {
+                Viewer* swap = temp[j];
+                temp[j] = temp[j + 1];
+                temp[j + 1] = swap;
+            }
+        }
+    }
+    
+    std::cout << "\n=== Spectator Queue (Priority Order) ===\n";
+    std::cout << std::left << std::setw(5) << "No." 
+              << std::setw(20) << "Name" 
+              << std::setw(10) << "ID" 
+              << std::setw(10) << "Priority" 
+              << std::setw(10) << "Arrival" << "\n";
+    std::cout << "----------------------------------------\n";
+    for (int i = 0; i < heapSize; i++) {
+        Viewer* v = temp[i];
+        std::cout << std::left << std::setw(5) << (i + 1) 
+                  << std::setw(20) << v->name 
+                  << std::setw(10) << v->id 
+                  << std::setw(10) << v->priority 
+                  << std::setw(10) << v->arrivalOrder << "\n";
+    }
+    std::cout << "========================================\n";
+    
+    delete[] temp;
+}
+
+void SpectatorQueue::displaySlots() const {
+    if (!slotsHead) {
+        std::cout << "No stream slots are currently available.\n";
+        return;
+    }
+    
+    std::cout << "\n=== Available Stream Slots ===\n";
+    std::cout << std::left << std::setw(5) << "No." 
+              << std::setw(10) << "Slot ID" 
+              << std::setw(25) << "Time" 
+              << std::setw(15) << "Channel" << "\n";
+    StreamSlot* current = slotsHead;
+    int count = 0;
+    while (current) {
+        count++;
+        std::string time = current->timeStart + " - " + current->timeEnd;
+        std::cout << std::left << std::setw(5) << count 
+                  << std::setw(10) << current->slotID 
+                  << std::setw(25) << time 
+                  << std::setw(15) << current->channelID << "\n";
+        current = current->next;
+    }
+    std::cout << "Total Slots: " << count << "\n";
+    std::cout << "==============================\n";
 }
 
 bool SpectatorQueue::isEmpty() const {
@@ -129,7 +200,6 @@ int SpectatorQueue::size() const {
 }
 
 void SpectatorQueue::clearAll() {
-    // Delete all remaining Viewer* in the heap
     for (int i = 0; i < heapSize; i++) {
         delete heap[i];
     }
@@ -151,7 +221,9 @@ void SpectatorQueue::siftUp(int idx) {
     while (idx > 0) {
         int parent = (idx - 1) / 2;
         if (compare(heap[idx], heap[parent]) > 0) {
-            std::swap(heap[idx], heap[parent]);
+            Viewer* temp = heap[idx];
+            heap[idx] = heap[parent];
+            heap[parent] = temp;
             idx = parent;
         } else {
             break;
@@ -171,7 +243,9 @@ void SpectatorQueue::siftDown(int idx) {
             largest = right;
         }
         if (largest != idx) {
-            std::swap(heap[idx], heap[largest]);
+            Viewer* temp = heap[idx];
+            heap[idx] = heap[largest];
+            heap[largest] = temp;
             idx = largest;
         } else {
             break;
@@ -180,10 +254,8 @@ void SpectatorQueue::siftDown(int idx) {
 }
 
 int SpectatorQueue::compare(Viewer* a, Viewer* b) const {
-    // Lower `priority` value = higher actual priority (1 is highest)
     if (a->priority < b->priority) return 1;
     if (a->priority > b->priority) return -1;
-    // Tie-break by arrivalOrder (lower = earlier)
     if (a->arrivalOrder < b->arrivalOrder) return 1;
     if (a->arrivalOrder > b->arrivalOrder) return -1;
     return 0;
