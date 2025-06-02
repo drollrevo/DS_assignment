@@ -61,8 +61,8 @@ private:
     // Priority queue for registrations (early-bird > wildcard > regular)
     PriorityNode* regHead;
     
-    // Circular Queue for check-ins
-    static const int CIRCULAR_SIZE = 50;
+    // Circular Queue for check-ins - reduced to 16 for tournament limit
+    static const int CIRCULAR_SIZE = 16;
     CircularQueueNode circularQueue[CIRCULAR_SIZE];
     int front, rear, queueCount;
     
@@ -80,7 +80,7 @@ private:
     int registeredCapacity;
     
     int arrivalCounter;
-    static const int MAX_CAPACITY = 32;
+    static const int MAX_CAPACITY = 16; // Fixed to 16 teams max
     
     // File pointer for logging
     std::FILE* regLog;
