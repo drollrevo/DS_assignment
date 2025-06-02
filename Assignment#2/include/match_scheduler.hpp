@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-#include "task4.hpp" // For PerformanceHistoryManager
 
 struct Player {
     std::string playerID;
@@ -19,8 +18,8 @@ struct Player {
 
 struct Match {
     std::string matchID;
-    std::string playerA;
-    std::string playerB;
+    std::string teamA;
+    std::string teamB;
     int scoreA;
     int scoreB;
     std::string winner;
@@ -31,6 +30,7 @@ struct Match {
     Match() : scoreA(0), scoreB(0), status("scheduled"), round("") {}
 };
 
+// Node for match queue
 struct MatchNode {
     Match* match;
     MatchNode* next;
@@ -38,43 +38,74 @@ struct MatchNode {
     MatchNode(Match* m) : match(m), next(nullptr) {}
 };
 
+// Structure to hold match result details for performance history
+struct MatchResult {
+    int matchId;
+    std::string team1;
+    std::string team2;
+    std::string winner;
+    std::string loser;
+    int team1Score;
+    int team2Score;
+    std::string gameMode;
+    std::string matchDate;
+    int durationMinutes;
+};
+
+class PerformanceHistoryManager {
+public:
+    virtual void recordMatchResult(const MatchResult& result) = 0;
+    virtual void displayAllPlayerStats() = 0;
+    virtual void displayRecentMatches() = 0;
+    virtual void searchPlayerMatches(const std::string& playerName) = 0;
+    virtual void getTopPlayersByWinRate(int n) = 0;
+    virtual void getTopPlayersByScore(int n) = 0;
+    virtual void generateTournamentSummary() = 0;
+    virtual ~PerformanceHistoryManager() {}
+};
+
 class MatchScheduler {
 private:
+    PerformanceHistoryManager* perfManager;
     Player** playerHeap;
     int heapSize;
     int heapCapacity;
-    int playerCount;
+    int teamCount;
     MatchNode* matchQueueHead;
     MatchNode* matchQueueTail;
-    Player* allPlayers;
+    Player* allTeams;
     Match* completedMatches;
     int completedCount;
-    int maxPlayers;
+    int maxTeams;
+    int teamsRemaining;
     std::string currentRound;
-    PerformanceHistoryManager* perfManager;
-
+    
     void siftUp(int idx);
     void siftDown(int idx);
     void resizeHeap();
     int comparePlayer(Player* a, Player* b);
     void parseLine(const std::string& line, std::string* fields, int expectedFields);
-    void generateCurrentRoundMatches();
-    void saveMatchResult(const std::string& matchID, const std::string& winner, int scoreA, int scoreB);
-    std::string getPlayerName(const std::string& playerID);
-    void sortPlayersByRank();
+    void saveMatchResult(const std::string& matchID, const std::string& winner, int scoreA, int scoreB, const std::string& teamA, const std::string& teamB);
+    std::string getTeamName(const std::string& teamID);
+    void sortTeamsByRank();
     void clearMatchQueue();
+    void displayBracketVisual(Player** teams, int teamCount);
 
 public:
-    MatchScheduler(PerformanceHistoryManager* perfManager);
+    MatchScheduler(PerformanceHistoryManager* perfManager = nullptr);
     ~MatchScheduler();
-    void loadPlayers(const std::string& filename);
+    
+    void loadTeams(const std::string& filename);
     void loadResults(const std::string& filename);
-    void generateMatchPairings(const std::string& stage);
+    
+    void generateMatchPairings();
     Match* getNextMatch();
     void recordMatchResult(const std::string& matchID, const std::string& winner);
+    
     void displayTournamentBracket();
     void displayMatchSchedule();
     void displayPlayerStats();
+    
     bool isEmpty() const;
     int size() const;
     void clearAll();
