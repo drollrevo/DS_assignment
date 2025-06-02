@@ -1,1 +1,9 @@
 TeamID,TeamName,RegistrationType,Timestamp,Action
+T01,Onyx Leopards,regular,2025-06-15T00:00,REGISTERED
+T04,Zinc Zebras,regular,2025-06-15T00:00,REGISTERED
+T03,White Sharks,wildcard,2025-06-15T00:00,REGISTERED
+T01,Onyx Leopards,regular,2025-06-15T00:00,CHECKED_IN
+T03,White Sharks,wildcard,2025-06-15T00:00,CHECKED_IN
+T08,Quartz Crushers,early-bird,2025-06-15T00:00,REGISTERED
+T01,Onyx Leopards,regular,2025-06-15T00:00,WITHDRAWN
+T08,Quartz Crushers,early-bird,2025-06-15T00:00,CHECKED_IN

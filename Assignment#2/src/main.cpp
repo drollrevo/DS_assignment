@@ -14,7 +14,7 @@ int main() {
     // Load initial data from files
     spectatorQueue.loadViewers("data/viewers.csv");
     spectatorQueue.loadSlots("data/stream_slots.csv");
-    matchScheduler.loadPlayers("data/players.csv");
+    matchScheduler.loadTeams("data/teams.csv");
     matchScheduler.loadResults("data/results.csv");
     registration.loadTeams("data/teams.csv");
 
@@ -100,13 +100,9 @@ int main() {
                     int schedChoice;
                     std::cin >> schedChoice;
                     switch (schedChoice) {
-                        case 1: {
-                            std::string stage;
-                            std::cout << "Enter stage (qualifier/group/knockout): ";
-                            std::cin >> stage;
-                            matchScheduler.generateMatchPairings(stage);
+                        case 1:
+                            matchScheduler.generateMatchPairings();
                             break;
-                        }
                         case 2:
                             matchScheduler.getNextMatch();
                             break;
@@ -114,7 +110,7 @@ int main() {
                             std::string matchID, winner;
                             std::cout << "Enter Match ID: ";
                             std::cin >> matchID;
-                            std::cout << "Enter Winner Player ID: ";
+                            std::cout << "Enter Winner Team ID: ";
                             std::cin >> winner;
                             matchScheduler.recordMatchResult(matchID, winner);
                             break;
@@ -258,7 +254,7 @@ int main() {
             case 5:
                 std::cout << "Ending tournament. Clearing queues...\n";
                 spectatorQueue.clearAll();
-                // Add other clear functions if needed
+                matchScheduler.clearAll();
                 running = false;
                 break;
             default:
