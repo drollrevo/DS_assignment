@@ -8,7 +8,7 @@ TournamentRegistration::TournamentRegistration()
     : regHead(nullptr), front(-1), rear(-1), queueCount(0),
       withdrawalTop(nullptr), allTeams(nullptr), teamCount(0), teamCapacity(10),
       registeredTeams(nullptr), registeredCount(0), registeredCapacity(10),
-      arrivalCounter(0), regLog(nullptr)
+      arrivalCounter(0)
 {
     allTeams = new Team[teamCapacity];
     registeredTeams = new Team*[registeredCapacity];
@@ -17,13 +17,6 @@ TournamentRegistration::TournamentRegistration()
     for (int i = 0; i < CIRCULAR_SIZE; i++) {
         circularQueue[i].next = (i + 1) % CIRCULAR_SIZE;
     }
-    
-    // Open registration log
-    regLog = std::fopen("data/registration_log.csv", "w");
-    if (regLog) {
-        std::fprintf(regLog, "TeamID,TeamName,RegistrationType,Timestamp,Action\n");
-        std::fflush(regLog);
-    }
 }
 
 TournamentRegistration::~TournamentRegistration() {
@@ -31,7 +24,6 @@ TournamentRegistration::~TournamentRegistration() {
     clearWithdrawalStack();
     delete[] allTeams;
     delete[] registeredTeams;
-    if (regLog) std::fclose(regLog);
 }
 
 void TournamentRegistration::loadTeams(const std::string& filename) {
@@ -44,6 +36,10 @@ void TournamentRegistration::loadTeams(const std::string& filename) {
     std::string line;
     if (!std::getline(file, line)) return;
     
+    // Check if file has new format with early-bird and wildcard columns
+    bool hasNewFormat = (line.find("EarlyBird") != std::string::npos && 
+                        line.find("Wildcard") != std::string::npos);
+    
     while (std::getline(file, line)) {
         if (line.empty()) continue;
         
@@ -51,24 +47,86 @@ void TournamentRegistration::loadTeams(const std::string& filename) {
             resizeTeamArray();
         }
         
-        std::string fields[3];
-        parseLine(line, fields, 3);
-        
-        allTeams[teamCount].teamID = fields[0];
-        allTeams[teamCount].teamName = fields[1];
-        allTeams[teamCount].rank = std::stoi(fields[2]);
-        
-        if (allTeams[teamCount].rank <= 50) {
-            allTeams[teamCount].isEarlyBird = true;
-        }
-        if (allTeams[teamCount].rank >= 150) {
-            allTeams[teamCount].isWildcard = true;
+        if (hasNewFormat) {
+            // New format: TeamID,TeamName,Rank,EarlyBird,Wildcard
+            std::string fields[5];
+            parseLine(line, fields, 5);
+            
+            allTeams[teamCount].teamID = fields[0];
+            allTeams[teamCount].teamName = fields[1];
+            allTeams[teamCount].rank = std::stoi(fields[2]);
+            allTeams[teamCount].isEarlyBird = (fields[3] == "1" || fields[3] == "true");
+            allTeams[teamCount].isWildcard = (fields[4] == "1" || fields[4] == "true");
+        } else {
+            // Old format: TeamID,TeamName,Rank
+            std::string fields[3];
+            parseLine(line, fields, 3);
+            
+            allTeams[teamCount].teamID = fields[0];
+            allTeams[teamCount].teamName = fields[1];
+            allTeams[teamCount].rank = std::stoi(fields[2]);
+            
+            // Set flags based on rank
+            allTeams[teamCount].isEarlyBird = (allTeams[teamCount].rank <= 50);
+            allTeams[teamCount].isWildcard = (allTeams[teamCount].rank >= 150);
         }
         
         teamCount++;
     }
     file.close();
     std::cout << "Loaded " << teamCount << " teams\n";
+}
+
+void TournamentRegistration::saveTeamsToCSV(const std::string& filename) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open " << filename << " for writing" << std::endl;
+        return;
+    }
+    
+    // Write header with new format
+    file << "TeamID,TeamName,Rank,EarlyBird,Wildcard\n";
+    
+    // Write all teams
+    for (int i = 0; i < teamCount; i++) {
+        file << allTeams[i].teamID << ","
+             << allTeams[i].teamName << ","
+             << allTeams[i].rank << ","
+             << (allTeams[i].isEarlyBird ? "1" : "0") << ","
+             << (allTeams[i].isWildcard ? "1" : "0") << "\n";
+    }
+    
+    file.close();
+    std::cout << "Teams saved to " << filename << std::endl;
+}
+
+bool TournamentRegistration::addNewTeam(const std::string& teamID, const std::string& teamName, int rank, const std::string& regType) {
+    // Check if team already exists
+    if (findTeamByID(teamID)) {
+        std::cout << "Team " << teamID << " already exists!" << std::endl;
+        return false;
+    }
+    
+    if (teamCount >= teamCapacity) {
+        resizeTeamArray();
+    }
+    
+    // Add new team to allTeams array
+    allTeams[teamCount].teamID = teamID;
+    allTeams[teamCount].teamName = teamName;
+    allTeams[teamCount].rank = rank;
+    allTeams[teamCount].isEarlyBird = (rank <= 50);
+    allTeams[teamCount].isWildcard = (rank >= 150);
+    allTeams[teamCount].registrationType = regType;
+    allTeams[teamCount].arrivalOrder = ++arrivalCounter;
+    
+    teamCount++;
+    
+    // Save updated teams to CSV
+    saveTeamsToCSV("data/teams.csv");
+    
+    // Register the team
+    return registerTeam(teamID, regType);
 }
 
 bool TournamentRegistration::registerTeam(const std::string& teamID, const std::string& regType) {
@@ -83,6 +141,7 @@ bool TournamentRegistration::registerTeam(const std::string& teamID, const std::
         return false;
     }
     
+    // Check if already registered
     for (int i = 0; i < registeredCount; i++) {
         if (registeredTeams[i]->teamID == teamID) {
             std::cout << "Team " << teamID << " already registered!" << std::endl;
@@ -90,6 +149,7 @@ bool TournamentRegistration::registerTeam(const std::string& teamID, const std::
         }
     }
     
+    // Validate eligibility
     if (regType == "early-bird" && !team->isEarlyBird) {
         std::cout << "Team " << teamID << " not eligible for early-bird (rank > 50)!" << std::endl;
         return false;
@@ -100,7 +160,9 @@ bool TournamentRegistration::registerTeam(const std::string& teamID, const std::
     }
     
     team->registrationType = regType;
-    team->arrivalOrder = ++arrivalCounter;
+    if (team->arrivalOrder == 0) {
+        team->arrivalOrder = ++arrivalCounter;
+    }
     
     if (registeredCount >= registeredCapacity) {
         resizeRegisteredArray();
@@ -108,12 +170,6 @@ bool TournamentRegistration::registerTeam(const std::string& teamID, const std::
     
     registeredTeams[registeredCount++] = team;
     insertPriorityQueue(team);
-    
-    if (regLog) {
-        std::fprintf(regLog, "%s,%s,%s,2025-06-15T00:00,REGISTERED\n",
-                     team->teamID.c_str(), team->teamName.c_str(), regType.c_str());
-        std::fflush(regLog);
-    }
     
     std::cout << "Team " << team->teamName << " (" << regType << ") registered!" << std::endl;
     return true;
@@ -143,14 +199,6 @@ bool TournamentRegistration::checkInTeam(const std::string& teamID) {
         if (team->teamID == teamID && !team->checkedIn) {
             team->checkedIn = true;
             enqueueCircular(team);
-            
-            if (regLog) {
-                std::fprintf(regLog, "%s,%s,%s,2025-06-15T00:00,CHECKED_IN\n",
-                             team->teamID.c_str(), team->teamName.c_str(), 
-                             team->registrationType.c_str());
-                std::fflush(regLog);
-            }
-            
             std::cout << "Team " << team->teamName << " checked in!\n";
             return true;
         }
@@ -182,13 +230,6 @@ void TournamentRegistration::withdrawTeam(const std::string& teamID) {
             }
             registeredCount--;
             
-            if (regLog) {
-                std::fprintf(regLog, "%s,%s,%s,2025-06-15T00:00,WITHDRAWN\n",
-                             team->teamID.c_str(), team->teamName.c_str(), 
-                             team->registrationType.c_str());
-                std::fflush(regLog);
-            }
-            
             std::cout << "Team " << team->teamName << " withdrawn!\n";
             return;
         }
@@ -197,22 +238,22 @@ void TournamentRegistration::withdrawTeam(const std::string& teamID) {
 }
 
 void TournamentRegistration::displayStats() {
-    std::cout << "\n=== Tournament Statistics ===\n";
+    std::cout << "\n=== Tournament Registration Statistics ===\n";
     std::cout << "Total Registered: " << registeredCount << "/" << MAX_CAPACITY << std::endl;
     
-    int checkedInCount = 0;
+    int checkedIn = 0;
     int earlyBird = 0, regular = 0, wildcard = 0;
     
     for (int i = 0; i < registeredCount; i++) {
         Team* team = registeredTeams[i];
-        if (team->checkedIn) checkedInCount++;
+        if (team->checkedIn) checkedIn++;
         
         if (team->registrationType == "early-bird") earlyBird++;
         else if (team->registrationType == "regular") regular++;
         else if (team->registrationType == "wildcard") wildcard++;
     }
     
-    std::cout << "Teams Checked In: " << checkedInCount << std::endl;
+    std::cout << "Checked In: " << checkedIn << std::endl;
     std::cout << "In Check-in Queue: " << queueCount << std::endl;
     
     std::cout << "\nRegistration Types:\n";
@@ -368,12 +409,6 @@ int TournamentRegistration::getRegisteredCount() const {
     return registeredCount;
 }
 
-// Additional missing functions
-void TournamentRegistration::saveRegistrationLog() {
-    if (!regLog) return;
-    std::cout << "Registration log saved\n";
-}
-
 void TournamentRegistration::addReplacementTeam(const std::string& teamID) {
     if (registeredCount >= MAX_CAPACITY) {
         std::cout << "Tournament full!\n";
@@ -456,22 +491,24 @@ void TournamentRegistration::displayRegistrationQueue() {
 
 void TournamentRegistration::displayMenu() {
     std::cout << "\n=== Tournament Registration Menu ===\n";
-    std::cout << "1. Register Team (Early-bird)\n";
-    std::cout << "2. Register Team (Regular)\n";
-    std::cout << "3. Register Team (Wildcard)\n";
-    std::cout << "4. Check-in Team\n";
-    std::cout << "5. Withdraw Team\n";
-    std::cout << "6. Add Replacement Team\n";
-    std::cout << "7. Process Next Check-in\n";
-    std::cout << "8. View Registration Queue\n";
-    std::cout << "9. View Check-in Queue\n";
-    std::cout << "10. View Withdrawal Stack\n";
-    std::cout << "11. View Statistics\n";
+    std::cout << "1. Register Existing Team (Early-bird)\n";
+    std::cout << "2. Register Existing Team (Regular)\n";
+    std::cout << "3. Register Existing Team (Wildcard)\n";
+    std::cout << "4. Add New Team and Register\n";
+    std::cout << "5. Check-in Team\n";
+    std::cout << "6. Withdraw Team\n";
+    std::cout << "7. Add Replacement Team\n";
+    std::cout << "8. Process Next Check-in\n";
+    std::cout << "9. View Registration Queue\n";
+    std::cout << "10. View Check-in Queue\n";
+    std::cout << "11. View Withdrawal Stack\n";
+    std::cout << "12. View Statistics\n";
     std::cout << "0. Return to Main Menu\n";
 }
 
 void TournamentRegistration::handleUserInput(int choice) {
-    std::string teamID;
+    std::string teamID, teamName, regType;
+    int rank;
     
     switch (choice) {
         case 1:
@@ -490,33 +527,45 @@ void TournamentRegistration::handleUserInput(int choice) {
             registerTeam(teamID, "wildcard");
             break;
         case 4:
+            std::cout << "Enter new Team ID: ";
+            std::cin >> teamID;
+            std::cout << "Enter Team Name: ";
+            std::cin.ignore();
+            std::getline(std::cin, teamName);
+            std::cout << "Enter Team Rank: ";
+            std::cin >> rank;
+            std::cout << "Enter Registration Type (early-bird/regular/wildcard): ";
+            std::cin >> regType;
+            addNewTeam(teamID, teamName, rank, regType);
+            break;
+        case 5:
             std::cout << "Enter Team ID to check-in: ";
             std::cin >> teamID;
             checkInTeam(teamID);
             break;
-        case 5:
+        case 6:
             std::cout << "Enter Team ID to withdraw: ";
             std::cin >> teamID;
             withdrawTeam(teamID);
             break;
-        case 6:
+        case 7:
             std::cout << "Enter Team ID for replacement: ";
             std::cin >> teamID;
             addReplacementTeam(teamID);
             break;
-        case 7:
+        case 8:
             getNextCheckedInTeam();
             break;
-        case 8:
+        case 9:
             processRegistrations();
             break;
-        case 9:
+        case 10:
             displayCheckInQueue();
             break;
-        case 10:
+        case 11:
             displayWithdrawalStack();
             break;
-        case 11:
+        case 12:
             displayStats();
             break;
         default:

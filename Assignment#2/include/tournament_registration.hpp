@@ -1,7 +1,6 @@
 #pragma once
 #include "team.hpp"
 #include <string>
-#include <cstdio>
 
 // Circular Queue Node for Check-ins
 struct CircularQueueNode {
@@ -31,10 +30,11 @@ public:
     
     // Load teams from CSV
     void loadTeams(const std::string& filename);
-    void saveRegistrationLog();
+    void saveTeamsToCSV(const std::string& filename);
     
     // Registration operations
     bool registerTeam(const std::string& teamID, const std::string& regType);
+    bool addNewTeam(const std::string& teamID, const std::string& teamName, int rank, const std::string& regType);
     void processRegistrations();
     
     // Check-in operations (Circular Queue)
@@ -81,9 +81,6 @@ private:
     
     int arrivalCounter;
     static const int MAX_CAPACITY = 16; // Fixed to 16 teams max
-    
-    // File pointer for logging
-    std::FILE* regLog;
     
     // Helper functions
     void insertPriorityQueue(Team* team);
